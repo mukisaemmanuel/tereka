@@ -1,0 +1,70 @@
+<!-- ============================================================
+     transactions.html — All transactions with month filter
+     ============================================================
+     Shows a table of all transactions for the logged-in user.
+     Includes a month filter dropdown at the top.
+     ============================================================ -->
+{% extends "base.html" %}
+
+{% block title %}Transactions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Transactions</h1>
+    <p class="page-subtitle">View and filter your transaction history</p>
+</div>
+
+<!-- MONTH FILTER -->
+<div class="card filter-card">
+    <form method="GET" action="{{ url_for('transactions') }}" class="filter-form">
+        <div class="form-group">
+            <label for="month">Filter by Month</label>
+            <input type="month" id="month" name="month" value="{{ month_filter }}"
+                   onchange="this.form.submit()">
+        </div>
+        {% if month_filter %}
+        <a href="{{ url_for('transactions') }}" class="btn btn-secondary btn-sm">Clear Filter</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- TRANSACTIONS TABLE -->
+<div class="card">
+    {% if transactions %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.date.strftime('%Y-%m-%d') if t.date else '' }}</td>
+                <td>
+                    <span class="badge badge-{{ t.type }}">{{ t.type|capitalize }}</span>
+                </td>
+                <td>{{ t.category }}</td>
+                <td>{{ t.description or '—' }}</td>
+                <td class="{% if t.type == 'income' %}text-green{% else %}text-red{% endif %}">
+                    {% if t.type == 'expense' %}-{% endif %}{{ t.amount|currency }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No transactions found.
+        {% if not month_filter %}
+        <a href="{{ url_for('add_transaction') }}">Add your first one</a>.
+        {% else %}
+        Try a different month or <a href="{{ url_for('transactions') }}">clear the filter</a>.
+        {% endif %}
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

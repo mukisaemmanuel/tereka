@@ -1,0 +1,59 @@
+<!-- ============================================================
+     base.html — Base template for all Tereka pages
+     ============================================================
+     This is the master layout. All other templates extend this.
+     It includes:
+     - HTML head with meta tags and CSS link
+     - Navbar (only shown when user is logged in)
+     - Flash messages (success and error)
+     - A content block that child templates fill in
+     ============================================================ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tereka{% endblock %} — Personal Finance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- NAVBAR — only shown when a user is logged in -->
+    {% if session.get('user_id') %}
+    <nav class="navbar">
+        <div class="nav-brand">Tereka</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
+            <a href="{{ url_for('add_transaction') }}" class="nav-link {% if request.endpoint == 'add_transaction' %}active{% endif %}">Add Transaction</a>
+            <a href="{{ url_for('transactions') }}" class="nav-link {% if request.endpoint == 'transactions' %}active{% endif %}">Transactions</a>
+            <a href="{{ url_for('budgets') }}" class="nav-link {% if request.endpoint == 'budgets' %}active{% endif %}">Budgets</a>
+            <a href="{{ url_for('report') }}" class="nav-link {% if request.endpoint == 'report' %}active{% endif %}">Report</a>
+        </div>
+        <div class="nav-user">
+            <span class="nav-username">{{ session.get('username', 'User') }}</span>
+            <a href="{{ url_for('logout') }}" class="nav-logout">Logout</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- FLASH MESSAGES — shown at the top of any page -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+                {{ message }}
+                <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- MAIN CONTENT — child templates fill this block -->
+    <main class="{% if not session.get('user_id') %}auth-main{% else %}app-main{% endif %}">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!-- ============================================================
+     register.html — Registration page for Tereka
+     ============================================================
+     Form with username, email, password, and confirm password.
+     Extends base.html — no navbar shown (user isn't logged in).
+     ============================================================ -->
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <div class="auth-header">
+        <h1>Create Account</h1>
+        <p>Start managing your finances today</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('register') }}" class="auth-form">
+        <!-- Username field -->
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required
+                   placeholder="Choose a username" autocomplete="username">
+        </div>
+
+        <!-- Email field -->
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required
+                   placeholder="you@example.com" autocomplete="email">
+        </div>
+
+        <!-- Password field -->
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required
+                   placeholder="At least 6 characters" autocomplete="new-password">
+        </div>
+
+        <!-- Confirm password field -->
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password</label>
+            <input type="password" id="confirm_password" name="confirm_password" required
+                   placeholder="Re-enter your password" autocomplete="new-password">
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+    </form>
+
+    <!-- Link to login page -->
+    <p class="auth-footer">
+        Already have an account? <a href="{{ url_for('login') }}">Log in here</a>
+    </p>
+</div>
+{% endblock %}

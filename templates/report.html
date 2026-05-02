@@ -1,0 +1,129 @@
+<!-- ============================================================
+     report.html — Monthly financial report
+     ============================================================
+     Full breakdown for a selected month:
+     - Income, expenses, net balance
+     - Spending per category
+     - Biggest single expense
+     - Daily average spend
+     - Exceeded budgets
+     ============================================================ -->
+{% extends "base.html" %}
+
+{% block title %}Monthly Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Monthly Report</h1>
+    <p class="page-subtitle">{{ month_name }} {{ report.year }}</p>
+</div>
+
+<!-- MONTH SELECTOR -->
+<div class="card filter-card">
+    <form method="GET" action="{{ url_for('report') }}" class="filter-form">
+        <div class="form-group">
+            <label for="month">Select Month</label>
+            <input type="month" id="month" name="month" value="{{ month_filter }}"
+                   onchange="this.form.submit()">
+        </div>
+    </form>
+</div>
+
+<!-- SUMMARY CARDS — income, expenses, net -->
+<div class="stats-grid">
+    <div class="stat-card stat-income">
+        <div class="stat-label">Total Income</div>
+        <div class="stat-value">{{ report.income|currency }}</div>
+    </div>
+    <div class="stat-card stat-expense">
+        <div class="stat-label">Total Expenses</div>
+        <div class="stat-value">{{ report.expense|currency }}</div>
+    </div>
+    <div class="stat-card stat-net">
+        <div class="stat-label">Net Balance</div>
+        <div class="stat-value {% if report.net < 0 %}text-red{% else %}text-green{% endif %}">
+            {% if report.net < 0 %}-{% endif %}{{ report.net|currency }}
+        </div>
+    </div>
+</div>
+
+<!-- SPENDING BY CATEGORY -->
+<div class="card">
+    <h2 class="card-title">Spending by Category</h2>
+    {% if report.spending_by_category %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>% of Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report.spending_by_category %}
+            <tr>
+                <td>{{ item.category }}</td>
+                <td class="text-red">{{ item.total|currency }}</td>
+                <td>
+                    {% if report.expense > 0 %}
+                    {{ (item.total / report.expense * 100)|round(1) }}%
+                    {% else %}
+                    0%
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No expenses recorded this month.</p>
+    {% endif %}
+</div>
+
+<!-- EXTRA STATS — biggest expense, daily average -->
+<div class="stats-grid stats-grid-2">
+    <div class="stat-card">
+        <div class="stat-label">Biggest Expense</div>
+        {% if report.biggest_expense %}
+        <div class="stat-value text-red">{{ report.biggest_expense.amount|currency }}</div>
+        <div class="stat-detail">{{ report.biggest_expense.category }}
+            {% if report.biggest_expense.description %} — {{ report.biggest_expense.description }}{% endif %}
+        </div>
+        {% else %}
+        <div class="stat-value">—</div>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Daily Average Spend</div>
+        <div class="stat-value text-red">{{ report.daily_average|currency }}</div>
+        <div class="stat-detail">per active day</div>
+    </div>
+</div>
+
+<!-- EXCEEDED BUDGETS -->
+{% if report.exceeded_budgets %}
+<div class="card">
+    <h2 class="card-title">Exceeded Budgets</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Limit</th>
+                <th>Spent</th>
+                <th>Over by</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in report.exceeded_budgets %}
+            <tr>
+                <td>{{ b.category }}</td>
+                <td>{{ b.monthly_limit|currency }}</td>
+                <td class="text-red">{{ b.spent|currency }}</td>
+                <td class="text-red">{{ (b.spent - b.monthly_limit)|currency }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

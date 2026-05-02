@@ -1,0 +1,83 @@
+<!-- ============================================================
+     budgets.html — Budget settings page
+     ============================================================
+     Two sections:
+     1. A form to set a new budget (category + monthly limit)
+     2. A list of existing budgets with progress bars showing
+        how much has been spent vs the limit this month
+     ============================================================ -->
+{% extends "base.html" %}
+
+{% block title %}Budgets{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Budgets</h1>
+    <p class="page-subtitle">Set monthly spending limits by category</p>
+</div>
+
+<!-- ADD BUDGET FORM -->
+<div class="card card-form">
+    <h2 class="card-title">Set a Budget</h2>
+    <form method="POST" action="{{ url_for('budgets') }}" class="form-layout">
+        <!-- Category dropdown -->
+        <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+                <option value="">Select category</option>
+                {% for cat in categories %}
+                <option value="{{ cat.name }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Monthly limit input -->
+        <div class="form-group">
+            <label for="monthly_limit">Monthly Limit</label>
+            <input type="number" id="monthly_limit" name="monthly_limit"
+                   step="0.01" min="0" required placeholder="0.00">
+        </div>
+
+        <!-- Submit -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Budget</button>
+        </div>
+    </form>
+</div>
+
+<!-- EXISTING BUDGETS WITH PROGRESS BARS -->
+{% if budget_data %}
+<div class="card">
+    <h2 class="card-title">Your Budgets This Month</h2>
+    <div class="budget-list">
+        {% for b in budget_data %}
+        <div class="budget-item">
+            <div class="budget-info">
+                <span class="budget-category">{{ b.category }}</span>
+                <span class="budget-amounts">
+                    <span class="{% if b.spent > b.monthly_limit %}text-red{% endif %}">
+                        {{ b.spent|currency }}
+                    </span>
+                    / {{ b.monthly_limit|currency }}
+                </span>
+            </div>
+            <!-- Progress bar showing spent vs limit -->
+            {% set percentage = (b.spent / b.monthly_limit * 100) if b.monthly_limit > 0 else 0 %}
+            {% if percentage > 100 %}{% set percentage = 100 %}{% endif %}
+            <div class="progress-bar">
+                <div class="progress-fill {% if b.spent > b.monthly_limit %}progress-exceeded{% elif percentage > 75 %}progress-warning{% else %}progress-ok{% endif %}"
+                     style="width: {% percentage }%"></div>
+            </div>
+            {% if b.spent > b.monthly_limit %}
+            <span class="budget-warning">Over budget by {{ (b.spent - b.monthly_limit)|currency }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <p class="empty-state">No budgets set yet. Use the form above to create one.</p>
+</div>
+{% endif %}
+{% endblock %}

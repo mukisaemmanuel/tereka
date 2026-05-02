@@ -1,0 +1,84 @@
+<!-- ============================================================
+     dashboard.html — Main dashboard for Tereka
+     ============================================================
+     Shows:
+     - 3 stat cards: income, expenses, net balance
+     - Budget exceeded warnings (if any)
+     - 5 most recent transactions
+     ============================================================ -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="page-subtitle">{{ month_name }} {{ year }}</p>
+</div>
+
+<!-- BUDGET EXCEEDED WARNINGS -->
+{% if exceeded %}
+<div class="warning-banner">
+    <strong>Budget Alert!</strong> You've exceeded your limit in:
+    {% for b in exceeded %}
+    <span class="warning-item">{{ b.category }} ({{ b.spent|currency }} / {{ b.monthly_limit|currency }})</span>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- STAT CARDS — income, expenses, net balance -->
+<div class="stats-grid">
+    <div class="stat-card stat-income">
+        <div class="stat-label">Total Income</div>
+        <div class="stat-value">{{ income|currency }}</div>
+    </div>
+    <div class="stat-card stat-expense">
+        <div class="stat-label">Total Expenses</div>
+        <div class="stat-value">{{ expense|currency }}</div>
+    </div>
+    <div class="stat-card stat-net">
+        <div class="stat-label">Net Balance</div>
+        <div class="stat-value {% if net < 0 %}text-red{% else %}text-green{% endif %}">
+            {% if net < 0 %}-{% endif %}{{ net|currency }}
+        </div>
+    </div>
+</div>
+
+<!-- RECENT TRANSACTIONS TABLE -->
+<div class="card">
+    <div class="card-header">
+        <h2>Recent Transactions</h2>
+        <a href="{{ url_for('add_transaction') }}" class="btn btn-primary btn-sm">+ Add</a>
+    </div>
+    {% if recent %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in recent %}
+            <tr>
+                <td>{{ t.date.strftime('%b %d') if t.date else '' }}</td>
+                <td>
+                    <span class="badge badge-{{ t.type }}">{{ t.type|capitalize }}</span>
+                </td>
+                <td>{{ t.category }}</td>
+                <td>{{ t.description or '—' }}</td>
+                <td class="{% if t.type == 'income' %}text-green{% else %}text-red{% endif %}">
+                    {% if t.type == 'expense' %}-{% endif %}{{ t.amount|currency }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No transactions yet. <a href="{{ url_for('add_transaction') }}">Add your first one</a>.</p>
+    {% endif %}
+</div>
+{% endblock %}
