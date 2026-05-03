@@ -66,7 +66,7 @@
             {% if percentage > 100 %}{% set percentage = 100 %}{% endif %}
             <div class="progress-bar">
                 <div class="progress-fill {% if b.spent > b.monthly_limit %}progress-exceeded{% elif percentage > 75 %}progress-warning{% else %}progress-ok{% endif %}"
-                     style="width: {% percentage }%"></div>
+                     style="width: {{ percentage }}%"></div>
             </div>
             {% if b.spent > b.monthly_limit %}
             <span class="budget-warning">Over budget by {{ (b.spent - b.monthly_limit)|currency }}</span>
