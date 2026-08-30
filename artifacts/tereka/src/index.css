@@ -80,12 +80,12 @@
   --elevate-1: rgba(0, 0, 0, 0.03);
   --elevate-2: rgba(0, 0, 0, 0.08);
 
-  --background: 42 35% 96%;
+  --background: 42 42% 93%;
   --foreground: 164 29% 15%;
-  --border: 38 25% 86%;
-  --card: 43 38% 99%;
+  --border: 38 28% 82%;
+  --card: 43 48% 99%;
   --card-foreground: 164 29% 15%;
-  --card-border: 38 28% 88%;
+  --card-border: 38 32% 84%;
   --sidebar: 165 31% 16%;
   --sidebar-foreground: 42 35% 96%;
   --sidebar-border: 165 25% 25%;
@@ -94,48 +94,50 @@
   --sidebar-accent: 165 25% 23%;
   --sidebar-accent-foreground: 42 35% 96%;
   --sidebar-ring: 42 84% 69%;
-  --popover: 43 38% 99%;
+  --popover: 43 48% 99%;
   --popover-foreground: 164 29% 15%;
   --popover-border: 38 28% 88%;
   --primary: 165 42% 25%;
   --primary-foreground: 42 35% 96%;
-  --secondary: 38 42% 90%;
+  --secondary: 39 52% 87%;
   --secondary-foreground: 165 31% 16%;
-  --muted: 40 28% 92%;
-  --muted-foreground: 164 12% 43%;
-  --accent: 39 83% 67%;
+  --muted: 40 38% 89%;
+  --muted-foreground: 164 12% 38%;
+  --accent: 39 83% 64%;
   --accent-foreground: 165 31% 16%;
   --destructive: 7 63% 53%;
   --destructive-foreground: 42 35% 96%;
-  --input: 38 25% 82%;
+  --input: 38 30% 77%;
   --ring: 165 42% 25%;
   --chart-1: 165 42% 25%;
   --chart-2: 39 83% 67%;
   --chart-3: 16 63% 62%;
   --chart-4: 191 38% 54%;
   --chart-5: 92 28% 50%;
+  --chart-income: 165 42% 35%;
+  --chart-expense: 39 83% 67%;
   --app-font-sans: 'Manrope', sans-serif;
   --app-font-serif: 'Playfair Display', serif;
   --app-font-mono: 'DM Mono', monospace;
   --radius: 0.85rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
-  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
+  --shadow-2xs: 0px 1px 2px 0px hsl(164 29% 15% / .035);
+  --shadow-xs: 0px 2px 4px 0px hsl(164 29% 15% / .045);
   --shadow-sm:
-    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
-    0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+    0px 1px 2px 0px hsl(164 29% 15% / .035),
+    0px 4px 10px -3px hsl(164 29% 15% / .08);
   --shadow:
-    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
-    0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+    0px 1px 2px 0px hsl(164 29% 15% / .035),
+    0px 8px 18px -8px hsl(164 29% 15% / .16);
   --shadow-md:
-    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
-    0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+    0px 2px 4px 0px hsl(164 29% 15% / .04),
+    0px 12px 26px -10px hsl(164 29% 15% / .18);
   --shadow-lg:
-    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
-    0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+    0px 3px 6px 0px hsl(164 29% 15% / .04),
+    0px 18px 36px -14px hsl(164 29% 15% / .22);
   --shadow-xl:
-    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
-    0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0);
-  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
+    0px 4px 8px 0px hsl(164 29% 15% / .05),
+    0px 24px 50px -18px hsl(164 29% 15% / .25);
+  --shadow-2xl: 0px 5px 12px 0px hsl(164 29% 15% / .06), 0px 30px 60px -22px hsl(164 29% 15% / .28);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -236,6 +238,8 @@
   --chart-3: 16 63% 62%;
   --chart-4: 191 38% 54%;
   --chart-5: 92 28% 50%;
+  --chart-income: 164 43% 57%;
+  --chart-expense: 39 83% 67%;
 
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
