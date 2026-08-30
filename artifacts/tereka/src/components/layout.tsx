@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
-import { useGetProfile } from '@workspace/api-client-react';
-import { Bot, ChevronDown, CircleHelp, CreditCard, Gauge, Goal, LayoutGrid, LogOut, Menu, PiggyBank, ReceiptText, Settings, Sparkles, WalletCards, X } from 'lucide-react';
+import { getGetProfileQueryKey, useGetProfile, useUpdateProfile } from '@workspace/api-client-react';
+import { Bot, CircleHelp, Gauge, Goal, LayoutGrid, LogOut, Menu, Moon, PiggyBank, ReceiptText, Settings, Sparkles, Sun, WalletCards, X } from 'lucide-react';
 import { initials } from '@/lib/finance';
+import { applyTheme } from '@/lib/theme';
 
 const nav = [
   { href: '/', label: 'Overview', icon: Gauge },
@@ -16,13 +18,31 @@ const nav = [
 export function AppShell({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const queryClient = useQueryClient();
   const profileQuery = useGetProfile();
+  const updateProfile = useUpdateProfile();
   const profile = profileQuery.data;
   const name = profile?.fullName || 'Your money, your way';
+  const isDark = profile?.theme === 'dark' || (profile?.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   useEffect(() => {
-    if (profile?.theme === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    const theme = profile?.theme || 'light';
+    applyTheme(theme);
+    if (theme !== 'system') return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => applyTheme('system');
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
   }, [profile?.theme]);
+  const toggleTheme = () => {
+    const nextTheme = isDark ? 'light' : 'dark';
+    applyTheme(nextTheme);
+    if (profile) {
+      updateProfile.mutate(
+        { data: { theme: nextTheme } },
+        { onSuccess: (data) => queryClient.setQueryData(getGetProfileQueryKey(), data) },
+      );
+    }
+  };
 
   const currentLabel = useMemo(() => nav.find((item) => item.href === location)?.label || 'Tereka', [location]);
   return (
@@ -60,7 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="min-h-[100dvh] lg:pl-[260px]">
         <header className="sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-border/70 bg-background/90 px-5 backdrop-blur-md sm:px-8 lg:px-12">
           <div className="flex items-center gap-3"><button className="rounded-xl border border-border p-2.5 lg:hidden" onClick={() => setMobileOpen(true)} data-testid="button-open-menu"><Menu size={19} /></button><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-muted-foreground">Tereka / {currentLabel}</p><p className="mt-0.5 text-sm font-semibold text-foreground/75">{location === '/' ? 'Your money, in a clearer light.' : `A closer look at your ${currentLabel.toLowerCase()}.`}</p></div></div>
-          <div className="flex items-center gap-2"><Link href="/assistant" className="hidden items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground/75 hover:border-primary/40 hover:bg-secondary sm:flex" data-testid="link-header-assistant"><Bot size={15} className="text-primary" /> Ask Tereka</Link><button className="rounded-xl p-2 text-muted-foreground hover:bg-secondary" title="Sign out (demo)" onClick={() => setLocation('/login')} data-testid="button-sign-out"><LogOut size={17} /></button></div>
+           <div className="flex items-center gap-2"><Link href="/assistant" className="hidden items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground/75 hover:border-primary/40 hover:bg-secondary sm:flex" data-testid="link-header-assistant"><Bot size={15} className="text-primary" /> Ask Tereka</Link><button className="rounded-xl p-2 text-muted-foreground hover:bg-secondary" title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} onClick={toggleTheme} disabled={updateProfile.isPending} data-testid="button-toggle-theme">{isDark ? <Sun size={17} /> : <Moon size={17} />}</button><button className="rounded-xl p-2 text-muted-foreground hover:bg-secondary" title="Sign out (demo)" onClick={() => setLocation('/login')} data-testid="button-sign-out"><LogOut size={17} /></button></div>
         </header>
         <div className="page-in px-5 py-7 sm:px-8 sm:py-10 lg:px-12">{children}</div>
       </main>
