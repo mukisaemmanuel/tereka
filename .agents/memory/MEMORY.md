@@ -1,0 +1,1 @@
+- [OpenAPI codegen compatibility](openapi-codegen.md) — avoid generated email-format validators unsupported by the workspace Zod version.

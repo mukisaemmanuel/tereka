@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Tereka Financial Intelligence"
+description = "A modern personal finance intelligence app for understanding income, spending, balances, budgets, goals, and financial decisions across East Africa."
+version = "1.0.0"
+id = "artifacts/tereka"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23282
+
+[services.development]
+run = "pnpm --filter @workspace/tereka run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tereka", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tereka/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23282"
+BASE_PATH = "/"

@@ -1,6 +1,6 @@
-# [Project name]
+# Tereka Financial Intelligence
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Tereka helps people understand their money, make calmer decisions, and build toward meaningful financial goals.
 
 ## Run & Operate
 
@@ -22,23 +22,33 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/tereka/src/pages/finance.tsx` — authenticated product pages and finance CRUD flows
+- `artifacts/tereka/src/components/layout.tsx` — shared shell, navigation, cards, forms, and modal primitives
+- `artifacts/tereka/src/lib/finance.ts` — currency, date, and transaction presentation utilities
+- `artifacts/api-server/src/services/finance-store.ts` — demo finance service and reusable calculation layer
+- `artifacts/api-server/src/routes/finance.ts` — typed finance API routes
+- `lib/api-spec/openapi.yaml` — source of truth for API contracts
+- `lib/db/src/schema/finance.ts` — PostgreSQL/Drizzle schema for the future persisted implementation
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- API contracts are defined in OpenAPI first and generated into the shared client and Zod packages.
+- Financial calculations live in the finance service layer instead of React components.
+- The first usable build runs with a server-side demo store so the product can be explored without exposing credentials or pretending third-party money integrations exist.
+- The database schema is prepared separately for authenticated, user-scoped persistence when the auth provider is connected.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The app includes a dashboard with cashflow and spending signals, transaction management, account tracking, budgets with warnings, savings goals, a controlled assistant surface, and profile/theme settings. Authentication screens are included as the next connection point for Supabase/Clerk-style auth.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+None yet.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The Vite build expects `PORT` and `BASE_PATH`; the managed web workflow supplies both.
+- After changing `lib/api-spec/openapi.yaml`, run the API codegen command before using new client hooks.
 
 ## Pointers
 

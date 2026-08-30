@@ -3,20 +3,26 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Tereka personal finance intelligence API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: dashboard
+  - name: transactions
+  - name: accounts
+  - name: categories
+  - name: budgets
+  - name: goals
+  - name: assistant
+  - name: profile
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +30,711 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get the financial command center summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /insights:
+    get:
+      operationId: getInsights
+      tags: [dashboard]
+      summary: Get current financial insights
+      responses:
+        "200":
+          description: Financial insights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FinancialInsight"
+  /transactions:
+    get:
+      operationId: getTransactions
+      tags: [transactions]
+      summary: List transactions
+      parameters:
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/TransactionType"
+        - $ref: "#/components/parameters/CategoryId"
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+    post:
+      operationId: createTransaction
+      tags: [transactions]
+      summary: Add a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "201":
+          description: Created transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+  /transactions/{id}:
+    patch:
+      operationId: updateTransaction
+      tags: [transactions]
+      summary: Edit a transaction
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionUpdate"
+      responses:
+        "200":
+          description: Updated transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+    delete:
+      operationId: deleteTransaction
+      tags: [transactions]
+      summary: Delete a transaction
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+  /accounts:
+    get:
+      operationId: getAccounts
+      tags: [accounts]
+      summary: List financial accounts
+      responses:
+        "200":
+          description: Accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+    post:
+      operationId: createAccount
+      tags: [accounts]
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountInput"
+      responses:
+        "201":
+          description: Created account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+  /accounts/{id}:
+    patch:
+      operationId: updateAccount
+      tags: [accounts]
+      summary: Edit an account
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountUpdate"
+      responses:
+        "200":
+          description: Updated account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+  /accounts/{id}/archive:
+    post:
+      operationId: archiveAccount
+      tags: [accounts]
+      summary: Archive an account without deleting its history
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Archived account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+  /categories:
+    get:
+      operationId: getCategories
+      tags: [categories]
+      summary: List categories
+      parameters:
+        - $ref: "#/components/parameters/TransactionType"
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a custom category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+  /budgets:
+    get:
+      operationId: getBudgets
+      tags: [budgets]
+      summary: List active budgets
+      responses:
+        "200":
+          description: Budgets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Budget"
+    post:
+      operationId: createBudget
+      tags: [budgets]
+      summary: Create a monthly budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetInput"
+      responses:
+        "201":
+          description: Created budget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+  /budgets/{id}:
+    patch:
+      operationId: updateBudget
+      tags: [budgets]
+      summary: Edit a budget
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetUpdate"
+      responses:
+        "200":
+          description: Updated budget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+    delete:
+      operationId: deleteBudget
+      tags: [budgets]
+      summary: Delete a budget
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+  /goals:
+    get:
+      operationId: getGoals
+      tags: [goals]
+      summary: List financial goals
+      responses:
+        "200":
+          description: Financial goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FinancialGoal"
+    post:
+      operationId: createGoal
+      tags: [goals]
+      summary: Create a financial goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "201":
+          description: Created goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialGoal"
+  /goals/{id}:
+    patch:
+      operationId: updateGoal
+      tags: [goals]
+      summary: Edit a financial goal
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalUpdate"
+      responses:
+        "200":
+          description: Updated goal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinancialGoal"
+    delete:
+      operationId: deleteGoal
+      tags: [goals]
+      summary: Delete a financial goal
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "204":
+          description: Deleted
+  /assistant/conversations:
+    get:
+      operationId: getConversations
+      tags: [assistant]
+      summary: List assistant conversations
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [assistant]
+      summary: Start an assistant conversation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+  /assistant/conversations/{id}/messages:
+    get:
+      operationId: getConversationMessages
+      tags: [assistant]
+      summary: Get messages in a conversation
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Conversation messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendAssistantMessage
+      tags: [assistant]
+      summary: Send a message to the assistant
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Assistant response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get the current profile
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    patch:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update profile preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
 components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Search:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+    TransactionType:
+      name: type
+      in: query
+      required: false
+      schema:
+        $ref: "#/components/schemas/TransactionType"
+    CategoryId:
+      name: categoryId
+      in: query
+      required: false
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
-
+    Currency:
+      type: string
+      enum: [UGX, KES, TZS, RWF, USD]
+    TransactionType:
+      type: string
+      enum: [income, expense]
+    AccountType:
+      type: string
+      enum: [cash, mobile_money, bank, savings, other]
+    Category:
+      type: object
+      required: [id, name, type, icon, isDefault]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        icon: { type: string }
+        isDefault: { type: boolean }
+    CategoryInput:
+      type: object
+      required: [name, type, icon]
+      properties:
+        name: { type: string, minLength: 1 }
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        icon: { type: string }
+    Account:
+      type: object
+      required: [id, name, type, currency, openingBalance, balance, isActive]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type:
+          $ref: "#/components/schemas/AccountType"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        openingBalance: { type: number }
+        balance: { type: number }
+        isActive: { type: boolean }
+    AccountInput:
+      type: object
+      required: [name, type, currency, openingBalance]
+      properties:
+        name: { type: string, minLength: 1 }
+        type:
+          $ref: "#/components/schemas/AccountType"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        openingBalance: { type: number, minimum: 0 }
+    AccountUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        type:
+          $ref: "#/components/schemas/AccountType"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        openingBalance: { type: number, minimum: 0 }
+        isActive: { type: boolean }
+    Transaction:
+      type: object
+      required: [id, type, amount, currency, accountId, accountName, categoryId, categoryName, description, notes, transactionDate]
+      properties:
+        id: { type: string }
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        amount: { type: number }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        accountId: { type: string }
+        accountName: { type: string }
+        categoryId: { type: string }
+        categoryName: { type: string }
+        description: { type: string }
+        notes: { type: ["string", "null"] }
+        transactionDate: { type: string, format: date }
+    TransactionInput:
+      type: object
+      required: [type, amount, currency, accountId, categoryId, description, transactionDate]
+      properties:
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        amount: { type: number, exclusiveMinimum: 0 }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        accountId: { type: string }
+        categoryId: { type: string }
+        description: { type: string, minLength: 1 }
+        notes: { type: string }
+        transactionDate: { type: string, format: date }
+    TransactionUpdate:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        amount: { type: number, exclusiveMinimum: 0 }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        accountId: { type: string }
+        categoryId: { type: string }
+        description: { type: string, minLength: 1 }
+        notes: { type: string }
+        transactionDate: { type: string, format: date }
+    Budget:
+      type: object
+      required: [id, categoryId, categoryName, amount, spent, currency, period, percentageUsed, status]
+      properties:
+        id: { type: string }
+        categoryId: { type: string }
+        categoryName: { type: string }
+        amount: { type: number }
+        spent: { type: number }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        period: { type: string, enum: [monthly] }
+        percentageUsed: { type: number }
+        status: { type: string, enum: [on_track, warning, exceeded] }
+    BudgetInput:
+      type: object
+      required: [categoryId, amount, currency, period]
+      properties:
+        categoryId: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        period: { type: string, enum: [monthly] }
+    BudgetUpdate:
+      type: object
+      properties:
+        categoryId: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        period: { type: string, enum: [monthly] }
+    FinancialGoal:
+      type: object
+      required: [id, name, targetAmount, currentAmount, currency, targetDate, status, percentageComplete, remainingAmount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        targetAmount: { type: number }
+        currentAmount: { type: number }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        targetDate: { type: string, format: date }
+        status: { type: string, enum: [active, completed, paused] }
+        percentageComplete: { type: number }
+        remainingAmount: { type: number }
+    GoalInput:
+      type: object
+      required: [name, targetAmount, currentAmount, currency, targetDate, status]
+      properties:
+        name: { type: string, minLength: 1 }
+        targetAmount: { type: number, exclusiveMinimum: 0 }
+        currentAmount: { type: number, minimum: 0 }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        targetDate: { type: string, format: date }
+        status: { type: string, enum: [active, completed, paused] }
+    GoalUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        targetAmount: { type: number, exclusiveMinimum: 0 }
+        currentAmount: { type: number, minimum: 0 }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        targetDate: { type: string, format: date }
+        status: { type: string, enum: [active, completed, paused] }
+    DashboardSummary:
+      type: object
+      required: [currency, totalBalance, monthlyIncome, monthlyExpenses, remainingBudget, balanceChange, spendingByCategory, incomeVsExpenses, recentTransactions, budgetStatus, goalProgress]
+      properties:
+        currency:
+          $ref: "#/components/schemas/Currency"
+        totalBalance: { type: number }
+        monthlyIncome: { type: number }
+        monthlyExpenses: { type: number }
+        remainingBudget: { type: number }
+        balanceChange: { type: number }
+        spendingByCategory:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategorySpend"
+        incomeVsExpenses:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyComparison"
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        budgetStatus:
+          type: array
+          items:
+            $ref: "#/components/schemas/Budget"
+        goalProgress:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinancialGoal"
+    CategorySpend:
+      type: object
+      required: [categoryName, amount, percentage, color]
+      properties:
+        categoryName: { type: string }
+        amount: { type: number }
+        percentage: { type: number }
+        color: { type: string }
+    MonthlyComparison:
+      type: object
+      required: [month, income, expenses]
+      properties:
+        month: { type: string }
+        income: { type: number }
+        expenses: { type: number }
+    FinancialInsight:
+      type: object
+      required: [id, title, body, tone, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        body: { type: string }
+        tone: { type: string, enum: [positive, neutral, attention] }
+        createdAt: { type: string, format: date-time }
+    Conversation:
+      type: object
+      required: [id, title, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ConversationInput:
+      type: object
+      properties:
+        title: { type: string }
+    Message:
+      type: object
+      required: [id, conversationId, role, content, createdAt]
+      properties:
+        id: { type: string }
+        conversationId: { type: string }
+        role: { type: string, enum: [user, assistant] }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+    MessageInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1 }
+    Profile:
+      type: object
+      required: [id, fullName, email, country, preferredCurrency, theme]
+      properties:
+        id: { type: string }
+        fullName: { type: string }
+        email: { type: string }
+        country: { type: string }
+        preferredCurrency:
+          $ref: "#/components/schemas/Currency"
+        theme: { type: string, enum: [light, dark, system] }
+    ProfileUpdate:
+      type: object
+      properties:
+        fullName: { type: string, minLength: 1 }
+        country: { type: string }
+        preferredCurrency:
+          $ref: "#/components/schemas/Currency"
+        theme: { type: string, enum: [light, dark, system] }
