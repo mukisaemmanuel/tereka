@@ -6,7 +6,9 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Accounts, Budgets, Dashboard, Goals, Settings, Transactions, Assistant } from '@/pages/finance';
 import { ForgotPassword, Login, Signup } from '@/pages/auth';
+import { AuthProvider, useAuth } from '@/lib/auth-context';
 import {
+  Redirect,
   Route,
   Switch,
   useLocation,
@@ -15,22 +17,87 @@ import {
 
 const queryClient = new QueryClient();
 
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary font-extrabold text-primary-foreground shadow-lg animate-pulse">
+            T
+          </span>
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Opening your financial space...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  return <Component />;
+}
+
+function PublicAuthRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary font-extrabold text-primary-foreground animate-pulse">
+          T
+        </span>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Redirect to="/" />;
+  }
+
+  return <Component />;
+}
+
 function Router() {
   return (
-    // Keep a shared shell (sidebar, navbar) outside the boundary so it
-    // survives a page crash.
     <RoutedErrorBoundary>
       <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/transactions" component={Transactions} />
-          <Route path="/accounts" component={Accounts} />
-          <Route path="/budgets" component={Budgets} />
-          <Route path="/goals" component={Goals} />
-          <Route path="/assistant" component={Assistant} />
-          <Route path="/settings" component={Settings} />
-          <Route path="/login" component={Login} />
-          <Route path="/signup" component={Signup} />
-          <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/">
+          <ProtectedRoute component={Dashboard} />
+        </Route>
+        <Route path="/transactions">
+          <ProtectedRoute component={Transactions} />
+        </Route>
+        <Route path="/accounts">
+          <ProtectedRoute component={Accounts} />
+        </Route>
+        <Route path="/budgets">
+          <ProtectedRoute component={Budgets} />
+        </Route>
+        <Route path="/goals">
+          <ProtectedRoute component={Goals} />
+        </Route>
+        <Route path="/assistant">
+          <ProtectedRoute component={Assistant} />
+        </Route>
+        <Route path="/settings">
+          <ProtectedRoute component={Settings} />
+        </Route>
+
+        <Route path="/login">
+          <PublicAuthRoute component={Login} />
+        </Route>
+        <Route path="/signup">
+          <PublicAuthRoute component={Signup} />
+        </Route>
+        <Route path="/forgot-password">
+          <PublicAuthRoute component={ForgotPassword} />
+        </Route>
+
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>
@@ -45,12 +112,14 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

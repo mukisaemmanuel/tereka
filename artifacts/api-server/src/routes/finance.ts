@@ -25,6 +25,7 @@ import {
   UpdateTransactionBody,
   UpdateTransactionParams,
 } from "@workspace/api-zod";
+import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
 import {
   archiveAccount,
   createAccount,
@@ -36,6 +37,7 @@ import {
   deleteBudget,
   deleteGoal,
   deleteTransaction,
+  getAccountBalance,
   getDashboardSummary,
   getProfile,
   listAccounts,
@@ -58,28 +60,49 @@ const router = Router();
 const notFound = (res: Parameters<Parameters<typeof router.get>[1]>[1]) => res.status(404).json({ error: "Record not found" });
 const calendarDate = (value: Date | string | undefined) => value instanceof Date ? value.toISOString().slice(0, 10) : value;
 
-router.get("/dashboard/summary", (_req, res) => res.json(getDashboardSummary()));
-router.get("/insights", (_req, res) => res.json(listInsights()));
+// Protect all finance endpoints with token authentication
+router.use(requireAuth);
 
-router.get("/transactions", (req, res) => {
-  const query = GetTransactionsQueryParams.parse(req.query);
-  res.json(listTransactions(query));
+router.get("/dashboard/summary", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.json(getDashboardSummary(userId));
 });
-router.post("/transactions", (req, res) => {
+
+router.get("/insights", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.json(listInsights(userId));
+});
+
+router.get("/transactions", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  const query = GetTransactionsQueryParams.parse(req.query);
+  return res.json(listTransactions(userId, query));
+});
+
+router.post("/transactions", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const body = CreateTransactionBody.parse(req.body);
-  return res.status(201).json(createTransaction({
+  const rawFee = req.body?.feeAmount;
+  const feeAmount = rawFee !== undefined ? Math.max(0, Math.round(Number(rawFee) || 0)) : 0;
+  return res.status(201).json(createTransaction(userId, {
     ...body,
+    feeAmount,
     notes: body.notes ?? null,
     transactionDate: calendarDate(body.transactionDate) as string,
   }));
 });
-router.patch("/transactions/:id", (req, res) => {
+
+router.patch("/transactions/:id", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = UpdateTransactionParams.parse(req.params);
   const body = UpdateTransactionBody.parse(req.body);
-  const transaction = updateTransaction(params.id, {
+  const rawFee = req.body?.feeAmount;
+  const feeAmount = rawFee !== undefined ? Math.max(0, Math.round(Number(rawFee) || 0)) : undefined;
+  const transaction = updateTransaction(userId, params.id, {
     ...(body.type ? { type: body.type } : {}),
     ...(body.currency ? { currency: body.currency } : {}),
     ...(body.amount !== undefined ? { amount: body.amount } : {}),
+    ...(feeAmount !== undefined ? { feeAmount } : {}),
     ...(body.accountId ? { accountId: body.accountId } : {}),
     ...(body.categoryId ? { categoryId: body.categoryId } : {}),
     ...(body.description ? { description: body.description } : {}),
@@ -88,51 +111,91 @@ router.patch("/transactions/:id", (req, res) => {
   });
   return transaction ? res.json(transaction) : notFound(res);
 });
-router.delete("/transactions/:id", (req, res) => {
+
+router.delete("/transactions/:id", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = DeleteTransactionParams.parse(req.params);
-  return deleteTransaction(params.id) ? res.status(204).send() : notFound(res);
+  return deleteTransaction(userId, params.id) ? res.status(204).send() : notFound(res);
 });
 
-router.get("/accounts", (_req, res) => res.json(listAccounts()));
-router.post("/accounts", (req, res) => res.status(201).json(createAccount(CreateAccountBody.parse(req.body))));
-router.patch("/accounts/:id", (req, res) => {
+router.get("/accounts", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  const accounts = listAccounts(userId).map((account) => ({
+    ...account,
+    balance: Math.round(getAccountBalance(userId, account.id)),
+  }));
+  return res.json(accounts);
+});
+
+router.post("/accounts", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.status(201).json(createAccount(userId, CreateAccountBody.parse(req.body)));
+});
+
+router.patch("/accounts/:id", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = UpdateAccountParams.parse(req.params);
-  const account = updateAccount(params.id, UpdateAccountBody.parse(req.body));
+  const account = updateAccount(userId, params.id, UpdateAccountBody.parse(req.body));
   return account ? res.json(account) : notFound(res);
 });
-router.post("/accounts/:id/archive", (req, res) => {
+
+router.post("/accounts/:id/archive", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = ArchiveAccountParams.parse(req.params);
-  const account = archiveAccount(params.id);
+  const account = archiveAccount(userId, params.id);
   return account ? res.json(account) : notFound(res);
 });
 
-router.get("/categories", (req, res) => {
+router.get("/categories", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const query = GetCategoriesQueryParams.parse(req.query);
-  res.json(listCategories(query.type));
+  return res.json(listCategories(userId, query.type));
 });
-router.post("/categories", (req, res) => res.status(201).json(createCategory(CreateCategoryBody.parse(req.body))));
 
-router.get("/budgets", (_req, res) => res.json(listBudgets()));
-router.post("/budgets", (req, res) => res.status(201).json(createBudget(CreateBudgetBody.parse(req.body))));
-router.patch("/budgets/:id", (req, res) => {
+router.post("/categories", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.status(201).json(createCategory(userId, CreateCategoryBody.parse(req.body)));
+});
+
+router.get("/budgets", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.json(listBudgets(userId));
+});
+
+router.post("/budgets", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.status(201).json(createBudget(userId, CreateBudgetBody.parse(req.body)));
+});
+
+router.patch("/budgets/:id", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = UpdateBudgetParams.parse(req.params);
-  const budget = updateBudget(params.id, UpdateBudgetBody.parse(req.body));
+  const budget = updateBudget(userId, params.id, UpdateBudgetBody.parse(req.body));
   return budget ? res.json(budget) : notFound(res);
 });
-router.delete("/budgets/:id", (req, res) => {
+
+router.delete("/budgets/:id", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = DeleteBudgetParams.parse(req.params);
-  return deleteBudget(params.id) ? res.status(204).send() : notFound(res);
+  return deleteBudget(userId, params.id) ? res.status(204).send() : notFound(res);
 });
 
-router.get("/goals", (_req, res) => res.json(listGoals()));
-router.post("/goals", (req, res) => {
-  const body = CreateGoalBody.parse(req.body);
-  return res.status(201).json(createGoal({ ...body, targetDate: calendarDate(body.targetDate) as string }));
+router.get("/goals", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.json(listGoals(userId));
 });
-router.patch("/goals/:id", (req, res) => {
+
+router.post("/goals", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  const body = CreateGoalBody.parse(req.body);
+  return res.status(201).json(createGoal(userId, { ...body, targetDate: calendarDate(body.targetDate) as string }));
+});
+
+router.patch("/goals/:id", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = UpdateGoalParams.parse(req.params);
   const body = UpdateGoalBody.parse(req.body);
-  const goal = updateGoal(params.id, {
+  const goal = updateGoal(userId, params.id, {
     ...(body.name ? { name: body.name } : {}),
     ...(body.targetAmount !== undefined ? { targetAmount: body.targetAmount } : {}),
     ...(body.currentAmount !== undefined ? { currentAmount: body.currentAmount } : {}),
@@ -142,28 +205,46 @@ router.patch("/goals/:id", (req, res) => {
   });
   return goal ? res.json(goal) : notFound(res);
 });
-router.delete("/goals/:id", (req, res) => {
+
+router.delete("/goals/:id", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = DeleteGoalParams.parse(req.params);
-  return deleteGoal(params.id) ? res.status(204).send() : notFound(res);
+  return deleteGoal(userId, params.id) ? res.status(204).send() : notFound(res);
 });
 
-router.get("/assistant/conversations", (_req, res) => res.json(listConversations()));
-router.post("/assistant/conversations", (req, res) => {
+router.get("/assistant/conversations", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.json(listConversations(userId));
+});
+
+router.post("/assistant/conversations", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const body = CreateConversationBody.parse(req.body ?? {});
-  res.status(201).json(createConversation(body.title));
+  return res.status(201).json(createConversation(userId, body.title));
 });
-router.get("/assistant/conversations/:id/messages", (req, res) => {
+
+router.get("/assistant/conversations/:id/messages", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = GetConversationMessagesParams.parse(req.params);
-  res.json(listMessages(params.id));
+  return res.json(listMessages(userId, params.id));
 });
-router.post("/assistant/conversations/:id/messages", (req, res) => {
+
+router.post("/assistant/conversations/:id/messages", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
   const params = SendAssistantMessageParams.parse(req.params);
   const body = SendAssistantMessageBody.parse(req.body);
-  const result = sendMessage(params.id, body.content);
+  const result = sendMessage(userId, params.id, body.content);
   return result ? res.status(201).json(result) : notFound(res);
 });
 
-router.get("/profile", (_req, res) => res.json(getProfile()));
-router.patch("/profile", (req, res) => res.json(updateProfile(UpdateProfileBody.parse(req.body))));
+router.get("/profile", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.json(getProfile(userId));
+});
+
+router.patch("/profile", (req: AuthenticatedRequest, res) => {
+  const userId = req.userId!;
+  return res.json(updateProfile(userId, UpdateProfileBody.parse(req.body)));
+});
 
 export default router;

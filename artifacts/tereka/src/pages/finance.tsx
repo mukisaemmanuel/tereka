@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { ArrowDownLeft, ArrowUpRight, Check, Edit3, Filter, Landmark, MoreHorizontal, Plus, RefreshCw, Search, Send, Sparkles, Target, Trash2, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Check, Edit3, Filter, Landmark, MoreHorizontal, Plus, Receipt, RefreshCw, Search, Send, Smartphone, Sparkles, Target, Trash2, Wallet } from 'lucide-react';
 import {
   Currency, ProfileTheme, TransactionType, useArchiveAccount, useCreateAccount, useCreateBudget, useCreateCategory, useCreateConversation, useCreateGoal, useCreateTransaction, useDeleteBudget, useDeleteGoal, useDeleteTransaction, useGetAccounts, useGetBudgets, useGetCategories, useGetConversationMessages, useGetConversations, useGetDashboardSummary, useGetGoals, useGetInsights, useGetProfile, useGetTransactions, useSendAssistantMessage, useUpdateAccount, useUpdateBudget, useUpdateGoal, useUpdateProfile, useUpdateTransaction,
   getGetAccountsQueryKey, getGetBudgetsQueryKey, getGetCategoriesQueryKey, getGetConversationMessagesQueryKey, getGetConversationsQueryKey, getGetGoalsQueryKey, getGetProfileQueryKey, getGetTransactionsQueryKey,
@@ -9,7 +9,7 @@ import {
 import type { Account, Budget, Category, Conversation, Currency as CurrencyType, FinancialGoal, Transaction, TransactionType as TransactionTypeValue } from '@workspace/api-client-react';
 import { AppShell, Button, Card, EmptyState, Field, Modal, PageHeading, Skeleton, inputClass } from '@/components/layout';
 import { DashboardCharts } from '@/components/finance-charts';
-import { compactMoney, dateLabel, money, transactionIcon } from '@/lib/finance';
+import { compactMoney, dateLabel, formatCurrency, money, transactionIcon } from '@/lib/finance';
 import { applyTheme } from '@/lib/theme';
 
 const currencies = Object.values(Currency);
@@ -27,7 +27,65 @@ function Dashboard() {
   const summary = summaryQuery.data; const insights = insightQuery.data || [];
   if (summaryQuery.isLoading) return <AppShell><DashboardSkeleton /></AppShell>;
   if (summaryQuery.isError || !summary) return <AppShell><ErrorState retry={() => summaryQuery.refetch()} /></AppShell>;
-  return <AppShell><PageHeading eyebrow="Wednesday, 12 June" title="Your money, in focus." description="A quiet overview of the choices you've made and the progress they are creating." action={<Link href="/transactions" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90" data-testid="link-add-from-dashboard"><Plus size={16} /> Add transaction</Link>} /><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Total balance" value={money(summary.totalBalance, summary.currency)} detail={`${summary.balanceChange >= 0 ? '+' : '−'}${compactMoney(Math.abs(summary.balanceChange), summary.currency)} net this month`} icon={Wallet} /><StatCard label="Income this month" value={compactMoney(summary.monthlyIncome, summary.currency)} detail="Money in, so far" accent="gold" icon={ArrowDownLeft} /><StatCard label="Spent this month" value={compactMoney(summary.monthlyExpenses, summary.currency)} detail="Across all accounts" icon={ArrowUpRight} /><StatCard label="Budget to spare" value={compactMoney(summary.remainingBudget, summary.currency)} detail="Before month end" accent="gold" icon={Target} /></div><DashboardCharts summary={summary} /><div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_.9fr]"><Card className="p-5 sm:p-6"><div className="mb-4 flex items-center justify-between"><div><p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Latest movement</p><h2 className="mt-2 font-serif text-2xl">Recent transactions</h2></div><Link href="/transactions" className="text-xs font-bold text-primary hover:underline" data-testid="link-see-transactions">See all</Link></div><div className="divide-y divide-border">{(summary.recentTransactions || []).slice(0, 5).map((tx) => <TransactionRow key={tx.id} transaction={tx} currency={summary.currency} />)}</div>{!summary.recentTransactions?.length && <EmptyState title="Your story starts here" body="Add your first transaction and Tereka will begin finding your rhythm." />}</Card><Insights insights={insights} loading={insightQuery.isLoading} /></div></AppShell>;
+  
+  const totalNetWorth = (summary as any).totalNetWorth ?? summary.totalBalance;
+  const totalFeesPaid = (summary as any).totalFeesPaid ?? 0;
+
+  return (
+    <AppShell>
+      <PageHeading
+        eyebrow="Financial Intelligence"
+        title="Your money, in focus."
+        description="A quiet overview of the choices you've made and the progress they are creating."
+        action={<Link href="/transactions" className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90" data-testid="link-add-from-dashboard"><Plus size={16} /> Add transaction</Link>}
+      />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Total Net Worth"
+          value={formatCurrency(totalNetWorth, summary.currency)}
+          detail={`Unifies multi-currency holdings into ${summary.currency || 'UGX'}`}
+          icon={Wallet}
+        />
+        <StatCard
+          label="Income this month"
+          value={compactMoney(summary.monthlyIncome, summary.currency)}
+          detail="Money in, so far"
+          accent="gold"
+          icon={ArrowDownLeft}
+        />
+        <StatCard
+          label="Spent this month"
+          value={compactMoney(summary.monthlyExpenses, summary.currency)}
+          detail="Across all accounts"
+          icon={ArrowUpRight}
+        />
+        <StatCard
+          label="Fee Leakage"
+          value={formatCurrency(totalFeesPaid, summary.currency || 'UGX')}
+          detail="MoMo & Bank Tariffs"
+          accent="gold"
+          icon={Receipt}
+        />
+      </div>
+      <DashboardCharts summary={summary} />
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
+        <Card className="p-5 sm:p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Latest movement</p>
+              <h2 className="mt-2 font-serif text-2xl">Recent transactions</h2>
+            </div>
+            <Link href="/transactions" className="text-xs font-bold text-primary hover:underline" data-testid="link-see-transactions">See all</Link>
+          </div>
+          <div className="divide-y divide-border">
+            {(summary.recentTransactions || []).slice(0, 5).map((tx) => <TransactionRow key={tx.id} transaction={tx} currency={summary.currency} />)}
+          </div>
+          {!summary.recentTransactions?.length && <EmptyState title="Your story starts here" body="Add your first transaction and Tereka will begin finding your rhythm." />}
+        </Card>
+        <Insights insights={insights} loading={insightQuery.isLoading} />
+      </div>
+    </AppShell>
+  );
 }
 
 function DashboardSkeleton() { return <><div className="mb-8"><Skeleton className="h-3 w-28" /><Skeleton className="mt-4 h-12 w-80" /><Skeleton className="mt-3 h-4 w-96 max-w-full" /></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32" />)}</div><div className="mt-5 grid gap-5 xl:grid-cols-2"><Skeleton className="h-80" /><Skeleton className="h-80" /></div></>; }
@@ -37,7 +95,7 @@ function Insights({ insights, loading }: { insights: any[]; loading: boolean }) 
 }
 
 function TransactionRow({ transaction: tx, currency }: { transaction: Transaction; currency?: CurrencyType }) {
-  return <div className="flex items-center gap-3 py-3"><span className={`grid h-9 w-9 place-items-center rounded-xl text-lg ${tx.type === 'income' ? 'bg-primary/10 text-primary' : 'bg-secondary text-primary'}`}>{transactionIcon(tx)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{tx.description}</p><p className="truncate text-xs text-muted-foreground">{tx.categoryName} · {dateLabel(tx.transactionDate)}</p></div><p className={`font-mono text-xs font-medium ${tx.type === 'income' ? 'text-primary' : 'text-foreground'}`}>{tx.type === 'income' ? '+' : '−'}{money(tx.amount, tx.currency || currency)}</p></div>;
+  return <div className="flex items-center gap-3 py-3"><span className={`grid h-9 w-9 place-items-center rounded-xl text-lg ${tx.type === 'income' ? 'bg-primary/10 text-primary' : 'bg-secondary text-primary'}`}>{transactionIcon(tx)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{tx.description}</p><p className="truncate text-xs text-muted-foreground">{tx.categoryName} · {dateLabel(tx.transactionDate)}</p></div><p className={`font-mono text-xs font-medium ${tx.type === 'income' ? 'text-primary' : 'text-foreground'}`}>{tx.type === 'income' ? '+' : '−'}{formatCurrency(tx.amount, tx.currency || currency)}</p></div>;
 }
 
 type TransactionForm = { type: TransactionTypeValue; amount: string; currency: CurrencyType; accountId: string; categoryId: string; description: string; notes: string; transactionDate: string };
@@ -57,10 +115,117 @@ function TransactionModal({ initial, accounts, categories, pending, onClose, onS
   return <Modal title={initial ? 'Edit transaction' : 'Add transaction'} onClose={onClose}><form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="space-y-4"><div className="grid grid-cols-2 gap-3"><Field label="Type"><select value={form.type} onChange={(e) => set('type', e.target.value)} className={inputClass} data-testid="select-form-transaction-type"><option value="expense">Expense</option><option value="income">Income</option></select></Field><Field label="Amount"><input required type="number" min="1" value={form.amount} onChange={(e) => set('amount', e.target.value)} placeholder="0" className={inputClass} data-testid="input-form-transaction-amount" /></Field></div><Field label="Description"><input required value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="What was this for?" className={inputClass} data-testid="input-form-transaction-description" /></Field><div className="grid grid-cols-2 gap-3"><Field label="Account"><select required value={form.accountId} onChange={(e) => { set('accountId', e.target.value); const account = accounts.find((a) => a.id === e.target.value); if (account) set('currency', account.currency); }} className={inputClass} data-testid="select-form-transaction-account"><option value="">Choose account</option>{accounts.filter((a) => a.isActive).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field><Field label="Category"><select required value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)} className={inputClass} data-testid="select-form-transaction-category"><option value="">Choose category</option>{categories.filter((c) => c.type === form.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field></div><div className="grid grid-cols-2 gap-3"><Field label="Date"><input required type="date" value={form.transactionDate} onChange={(e) => set('transactionDate', e.target.value)} className={inputClass} data-testid="input-form-transaction-date" /></Field><Field label="Notes"><input value={form.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Optional" className={inputClass} data-testid="input-form-transaction-notes" /></Field></div><Button type="submit" className="mt-2 w-full" disabled={pending} data-testid="button-save-transaction">{pending ? 'Saving…' : initial ? 'Save changes' : 'Add transaction'}</Button></form></Modal>;
 }
 
+function getAccountProviderBadge(account: Account) {
+  const nameLower = (account.name || '').toLowerCase();
+  const type: string = account.type || 'other';
+
+  if (type === 'mobile_money') {
+    if (nameLower.includes('mtn') || nameLower.includes('momo')) {
+      return { tag: 'MTN MoMo', className: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30' };
+    }
+    if (nameLower.includes('mpesa') || nameLower.includes('m-pesa') || nameLower.includes('safaricom')) {
+      return { tag: 'Safaricom M-Pesa', className: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' };
+    }
+    if (nameLower.includes('airtel')) {
+      return { tag: 'Airtel Money', className: 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30' };
+    }
+    return { tag: 'Mobile Money', className: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30' };
+  }
+
+  if (type === 'bank') {
+    if (nameLower.includes('stanbic')) {
+      return { tag: 'Stanbic Bank', className: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30' };
+    }
+    if (nameLower.includes('kcb')) {
+      return { tag: 'KCB Bank', className: 'bg-teal-500/15 text-teal-700 dark:text-teal-400 border-teal-500/30' };
+    }
+    if (nameLower.includes('equity')) {
+      return { tag: 'Equity Bank', className: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30' };
+    }
+    return { tag: 'Commercial Bank', className: 'bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30' };
+  }
+
+  if (type === 'cash') {
+    return { tag: 'Physical Cash', className: 'bg-stone-500/15 text-stone-700 dark:text-stone-400 border-stone-500/30' };
+  }
+
+  if (type === 'sacco' || type === 'savings') {
+    return { tag: 'SACCO / Chama', className: 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30' };
+  }
+
+  return { tag: account.type.replace('_', ' '), className: 'bg-secondary text-muted-foreground border-border' };
+}
+
 function Accounts() {
   const qc = useQueryClient(); const query = useGetAccounts(); const [modal, setModal] = useState<'add' | Account | null>(null); const create = useCreateAccount(); const update = useUpdateAccount(); const archive = useArchiveAccount(); const accounts = query.data || [];
   const save = (data: any, id?: string) => { const onSuccess = () => { qc.invalidateQueries({ queryKey: getGetAccountsQueryKey() }); setModal(null); }; if (id) update.mutate({ id, data }, { onSuccess }); else create.mutate({ data }, { onSuccess }); };
-  return <AppShell><PageHeading eyebrow="Your foundations" title="Accounts" description="The places your money rests, moves through, and grows." action={<Button onClick={() => setModal('add')} data-testid="button-add-account"><Plus size={16} /> Add account</Button>} /><div className="mb-6 grid gap-4 sm:grid-cols-3"><Card className="bg-primary p-5 text-primary-foreground sm:col-span-2"><p className="font-mono text-[10px] uppercase tracking-widest text-primary-foreground/60">Across active accounts</p><p className="mt-3 font-serif text-4xl">{money(accounts.filter((a) => a.isActive).reduce((sum, a) => sum + a.balance, 0), accounts[0]?.currency)}</p><p className="mt-2 text-xs text-primary-foreground/60">Your connected view, in one place.</p></Card><Card className="flex flex-col justify-between p-5"><p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Active accounts</p><p className="mt-4 text-4xl font-extrabold">{accounts.filter((a) => a.isActive).length}</p><p className="text-xs text-muted-foreground">Keep it simple and useful.</p></Card></div>{query.isLoading ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-48" />)}</div> : query.isError ? <ErrorState retry={() => query.refetch()} /> : accounts.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{accounts.map((account) => <Card key={account.id} className={`group p-5 ${!account.isActive ? 'opacity-60' : ''}`}><div className="flex items-start justify-between"><span className="grid h-10 w-10 place-items-center rounded-xl bg-secondary text-primary"><Landmark size={19} /></span><div className="flex gap-1"><button onClick={() => setModal(account)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-primary" data-testid={`button-edit-account-${account.id}`}><Edit3 size={15} /></button>{account.isActive && <button onClick={() => { if (window.confirm('Archive this account? Its history will be kept.')) archive.mutate({ id: account.id }, { onSuccess: () => qc.invalidateQueries({ queryKey: getGetAccountsQueryKey() }) }); }} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" data-testid={`button-archive-account-${account.id}`}><MoreHorizontal size={15} /></button>}</div></div><p className="mt-5 text-sm font-bold">{account.name}</p><p className="mt-1 text-xs capitalize text-muted-foreground">{account.type.replace('_', ' ')} · {account.currency}</p><p className="mt-5 font-mono text-2xl">{money(account.balance, account.currency)}</p><p className="mt-1 text-xs text-muted-foreground">{account.isActive ? 'Active balance' : 'Archived account'}</p></Card>)}</div> : <Card><EmptyState title="Give your money a home" body="Add a bank, mobile wallet, or cash account to see your full balance." action={<Button onClick={() => setModal('add')} data-testid="button-empty-add-account"><Plus size={15} /> Add account</Button>} /></Card>}{modal && <AccountModal initial={modal !== 'add' ? modal : undefined} pending={create.isPending || update.isPending} onClose={() => setModal(null)} onSave={save} />}</AppShell>;
+  return (
+    <AppShell>
+      <PageHeading eyebrow="Your foundations" title="Accounts" description="The places your money rests, moves through, and grows." action={<Button onClick={() => setModal('add')} data-testid="button-add-account"><Plus size={16} /> Add account</Button>} />
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <Card className="bg-primary p-5 text-primary-foreground sm:col-span-2">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-primary-foreground/60">Across active accounts</p>
+          <p className="mt-3 font-serif text-4xl">{formatCurrency(accounts.filter((a) => a.isActive).reduce((sum, a) => sum + a.balance, 0), accounts[0]?.currency)}</p>
+          <p className="mt-2 text-xs text-primary-foreground/60">Your connected view, in one place.</p>
+        </Card>
+        <Card className="flex flex-col justify-between p-5">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Active accounts</p>
+          <p className="mt-4 text-4xl font-extrabold">{accounts.filter((a) => a.isActive).length}</p>
+          <p className="text-xs text-muted-foreground">Keep it simple and useful.</p>
+        </Card>
+      </div>
+      {query.isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-48" />)}</div>
+      ) : query.isError ? (
+        <ErrorState retry={() => query.refetch()} />
+      ) : accounts.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {accounts.map((account) => {
+            const badge = getAccountProviderBadge(account);
+            return (
+              <Card key={account.id} className={`group p-5 ${!account.isActive ? 'opacity-60' : ''}`}>
+                <div className="flex items-start justify-between">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-secondary text-primary">
+                    {account.type === 'mobile_money' ? <Smartphone size={19} /> : account.type === 'cash' ? <Wallet size={19} /> : <Landmark size={19} />}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${badge.className}`}>
+                      {badge.tag}
+                    </span>
+                    <div className="flex gap-1">
+                      <button onClick={() => setModal(account)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-primary" data-testid={`button-edit-account-${account.id}`}>
+                        <Edit3 size={15} />
+                      </button>
+                      {account.isActive && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Archive this account? Its history will be kept.')) {
+                              archive.mutate({ id: account.id }, { onSuccess: () => qc.invalidateQueries({ queryKey: getGetAccountsQueryKey() }) });
+                            }
+                          }}
+                          className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          data-testid={`button-archive-account-${account.id}`}
+                        >
+                          <MoreHorizontal size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-5 text-base font-bold">{account.name}</p>
+                <p className="mt-1 text-xs capitalize text-muted-foreground">{account.type.replace('_', ' ')} · {account.currency}</p>
+                <p className="mt-4 font-mono text-2xl font-bold">{formatCurrency(account.balance, account.currency)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{account.isActive ? 'Active balance (ledger synced)' : 'Archived account'}</p>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card><EmptyState title="Give your money a home" body="Add a bank, mobile wallet, or cash account to see your full balance." action={<Button onClick={() => setModal('add')} data-testid="button-empty-add-account"><Plus size={15} /> Add account</Button>} /></Card>
+      )}
+      {modal && <AccountModal initial={modal !== 'add' ? modal : undefined} pending={create.isPending || update.isPending} onClose={() => setModal(null)} onSave={save} />}
+    </AppShell>
+  );
 }
 
 function AccountModal({ initial, pending, onClose, onSave }: { initial?: Account; pending: boolean; onClose: () => void; onSave: (data: any, id?: string) => void }) {
