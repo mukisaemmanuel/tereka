@@ -30,7 +30,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  baseCurrency: 'UGX' | 'KES' | 'TZS' | 'RWF' | 'USD';
+  baseCurrency: 'UGX';
 }
 
 /**
@@ -41,7 +41,7 @@ export interface UserProfile {
   fullName: string;
   email: string;
   country: string;
-  preferredCurrency: 'UGX' | 'KES' | 'TZS' | 'RWF' | 'USD';
+  preferredCurrency: 'UGX';
   theme: 'light' | 'dark' | 'system';
 }
 

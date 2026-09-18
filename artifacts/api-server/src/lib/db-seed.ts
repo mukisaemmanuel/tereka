@@ -86,7 +86,7 @@ export async function seedInitialDatabase() {
       // Accounts
       const demoAccounts = [
         { id: "account-mtn-momo", name: "MTN MoMo", type: "mobile_money", currency: "UGX", openingBalance: "1450000" },
-        { id: "account-safaricom-mpesa", name: "Safaricom M-Pesa", type: "mobile_money", currency: "KES", openingBalance: "24500" },
+        { id: "account-airtel-money", name: "Airtel Money", type: "mobile_money", currency: "UGX", openingBalance: "650000" },
         { id: "account-stanbic-ug", name: "Stanbic Bank Uganda", type: "bank", currency: "UGX", openingBalance: "5200000" },
         { id: "account-physical-cash", name: "Physical Cash", type: "cash", currency: "UGX", openingBalance: "180000" },
       ];
@@ -109,7 +109,7 @@ export async function seedInitialDatabase() {
         { id: "tx-boda-fuel", type: "expense", amount: "35000", feeAmount: "0", currency: "UGX", accountId: "account-physical-cash", categoryId: defaultCategoryIds.transport, description: "Boda fuel & Shell refill", notes: "Kampala commute fuel", transactionDate: "2026-08-27" },
         { id: "tx-momo-cashout", type: "expense", amount: "150000", feeAmount: "2850", currency: "UGX", accountId: "account-mtn-momo", categoryId: defaultCategoryIds.fees, description: "MoMo Cash Out & Agent Withdrawal", notes: "Agent fee UGX 2,850 deducted", transactionDate: "2026-08-25" },
         { id: "tx-aug-salary", type: "income", amount: "6800000", feeAmount: "0", currency: "UGX", accountId: "account-stanbic-ug", categoryId: defaultCategoryIds.salary, description: "Monthly Consulting Salary", notes: "Direct EFT transfer from client", transactionDate: "2026-08-24" },
-        { id: "tx-safari-groceries", type: "expense", amount: "4500", feeAmount: "35", currency: "KES", accountId: "account-safaricom-mpesa", categoryId: defaultCategoryIds.food, description: "Naivas Supermarket via Buy Goods", notes: "M-Pesa till payment", transactionDate: "2026-08-22" },
+        { id: "tx-airtel-groceries", type: "expense", amount: "125000", feeAmount: "1000", currency: "UGX", accountId: "account-airtel-money", categoryId: defaultCategoryIds.food, description: "Capital Shoppers Nakawa", notes: "Airtel merchant payment", transactionDate: "2026-08-22" },
         { id: "tx-stanbic-rent", type: "expense", amount: "1600000", feeAmount: "2500", currency: "UGX", accountId: "account-stanbic-ug", categoryId: defaultCategoryIds.utilities, description: "Apartment Rent & Service Fee", notes: "Bank transfer to landlord", transactionDate: "2026-08-02" },
       ];
 

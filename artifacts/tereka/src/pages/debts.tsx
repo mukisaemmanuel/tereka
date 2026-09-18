@@ -600,49 +600,31 @@ function AddDebtModal({
           </button>
         </div>
 
-        <Field label={type === 'owed_to_you' ? 'Borrower (Person or Business)' : 'Creditor (Person, SACCO, or Bank)'}>
+        <Field label="Counterparty (Person or Entity)">
           <input
             required
             type="text"
             value={personOrEntity}
             onChange={(e) => setPersonOrEntity(e.target.value)}
-            placeholder={type === 'owed_to_you' ? 'e.g. John Katende, Sarah' : 'e.g. Wandegeya SACCO, Stanbic'}
+            placeholder={type === 'owed_to_you' ? 'e.g. John Katende, Sarah Namubiru' : 'e.g. Wandegeya SACCO, Bank loan'}
             className={inputClass}
             data-testid="input-debt-person"
           />
         </Field>
 
-        <div className="grid grid-cols-3 gap-3">
-          <div className="col-span-2">
-            <Field label="Principal Amount">
-              <input
-                required
-                type="number"
-                min="1"
-                step="1"
-                value={principalAmount}
-                onChange={(e) => setPrincipalAmount(e.target.value)}
-                placeholder="0"
-                className={inputClass}
-                data-testid="input-debt-amount"
-              />
-            </Field>
-          </div>
-          <Field label="Currency">
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value as CurrencyType)}
-              className={inputClass}
-              data-testid="select-debt-currency"
-            >
-              {currencies.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
+        <Field label="Principal Amount (UGX)">
+          <input
+            required
+            type="number"
+            min="1"
+            step="1"
+            value={principalAmount}
+            onChange={(e) => setPrincipalAmount(e.target.value)}
+            placeholder="0"
+            className={inputClass}
+            data-testid="input-debt-amount"
+          />
+        </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Due Date (Optional)">
@@ -658,18 +640,14 @@ function AddDebtModal({
           <Field label={type === 'owed_to_you' ? 'Lent from Account' : 'Received into Account'}>
             <select
               value={accountId}
-              onChange={(e) => {
-                setAccountId(e.target.value);
-                const acc = accounts.find((a) => a.id === e.target.value);
-                if (acc) setCurrency(acc.currency);
-              }}
+              onChange={(e) => setAccountId(e.target.value)}
               className={inputClass}
               data-testid="select-debt-funding-account"
             >
               <option value="">Do not adjust wallet</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
-                  {acc.name} ({acc.currency})
+                  {acc.name}
                 </option>
               ))}
             </select>
@@ -819,7 +797,7 @@ function RepaymentModal({
             <option value="">Do not adjust balance</option>
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>
-                {acc.name} ({acc.currency})
+                {acc.name}
               </option>
             ))}
           </select>

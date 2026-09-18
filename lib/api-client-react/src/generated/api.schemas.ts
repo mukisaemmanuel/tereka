@@ -14,10 +14,6 @@ export type Currency = typeof Currency[keyof typeof Currency];
 
 export const Currency = {
   UGX: 'UGX',
-  KES: 'KES',
-  TZS: 'TZS',
-  RWF: 'RWF',
-  USD: 'USD',
 } as const;
 
 export type TransactionType = typeof TransactionType[keyof typeof TransactionType];

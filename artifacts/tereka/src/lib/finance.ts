@@ -20,63 +20,27 @@ import type { Currency, Transaction } from '@workspace/api-client-react';
  * ------------------------------------------------------------------------------
  * 1. CURRENCY SYMBOLS DICTIONARY
  * ------------------------------------------------------------------------------
- * Maps ISO currency codes to their respective display symbols or prefixes.
- * - UGX: Uganda Shillings
- * - KES: Kenya Shillings
- * - TZS: Tanzania Shillings
- * - RWF: Rwandan Francs
- * - USD: United States Dollars ($)
  */
 export const currencySymbols: Record<string, string> = {
   UGX: 'UGX',
-  KES: 'KES',
-  TZS: 'TZS',
-  RWF: 'RWF',
-  USD: '$',
 };
 
 /**
  * ------------------------------------------------------------------------------
  * 2. PRIMARY CURRENCY FORMATTER (`formatCurrency`)
  * ------------------------------------------------------------------------------
- * Formats numeric monetary amounts with regional decimal precision rules:
- * 
- * - Zero-Decimal Currencies (UGX, TZS, RWF):
- *   In daily commerce, Uganda Shillings, Tanzania Shillings, and Rwanda Francs
- *   do not use decimal places/cents. e.g., "UGX 1,450,000" (NOT "UGX 1,450,000.00").
- * 
- * - Two-Decimal Currencies (KES, USD):
- *   Kenya Shillings (cents) and US Dollars use standard 2 decimal places.
- *   e.g., "KES 24,500.50" or "$ 120.00".
+ * Formats numeric monetary amounts locked strictly to Ugandan Shillings (UGX)
+ * with zero decimal places (e.g., "UGX 1,450,000").
  * 
  * @param amount - Numeric value to format (safe with null, undefined, or strings)
- * @param currency - Target currency code (defaults to 'UGX')
- * @returns Formatted currency string, e.g. "UGX 250,000" or "$ 15.50"
+ * @returns Formatted currency string, e.g. "UGX 250,000"
  */
 export function formatCurrency(
   amount: number | null | undefined,
-  currency: Currency | string = 'UGX'
+  _currency?: Currency | string
 ): string {
-  // Convert null/undefined/NaN safely to 0
   const numericAmount = Number(amount || 0);
-
-  // Normalize currency code to uppercase
-  const normalizedCurrency = (currency || 'UGX').toUpperCase();
-
-  // Define currencies that do not use fractional cents
-  const zeroDecimalCurrencies = ['UGX', 'TZS', 'RWF'];
-  const fractionDigits = zeroDecimalCurrencies.includes(normalizedCurrency) ? 0 : 2;
-
-  // Lookup display symbol (fallback to currency code itself if unknown)
-  const symbol = currencySymbols[normalizedCurrency] || normalizedCurrency;
-
-  // Format with standard thousand separators (e.g., 1,000,000)
-  const formattedNumber = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
-  }).format(numericAmount);
-
-  return `${symbol} ${formattedNumber}`;
+  return 'UGX ' + Math.round(numericAmount).toLocaleString('en-US');
 }
 
 /**
@@ -84,20 +48,20 @@ export function formatCurrency(
  * 3. SHORTCUT MONEY ALIAS (`money`)
  * ------------------------------------------------------------------------------
  * Convenience alias for `formatCurrency`.
- * Example: `money(50000, 'UGX')` -> "UGX 50,000"
+ * Example: `money(50000)` -> "UGX 50,000"
  */
 export function money(
   value: number | null | undefined,
-  currency: Currency | string = 'UGX'
+  _currency?: Currency | string
 ): string {
-  return formatCurrency(value, currency);
+  return formatCurrency(value);
 }
 
 /**
  * ------------------------------------------------------------------------------
  * 4. COMPACT MONEY FORMATTER (`compactMoney`)
  * ------------------------------------------------------------------------------
- * Abbreviates large monetary values into human-friendly metrics for stat cards,
+ * Abbreviates large UGX monetary values into human-friendly metrics for stat cards,
  * badges, and mobile screens where horizontal space is constrained.
  * 
  * Examples:
@@ -106,28 +70,25 @@ export function money(
  * - 800       -> "UGX 800"
  * 
  * @param value - Amount to compress
- * @param currency - Target currency
  */
 export function compactMoney(
   value: number | null | undefined,
-  currency: Currency | string = 'UGX'
+  _currency?: Currency | string
 ): string {
   const amount = Number(value || 0);
-  const normalizedCurrency = (currency || 'UGX').toUpperCase();
-  const symbol = currencySymbols[normalizedCurrency] || normalizedCurrency;
 
   // Values >= 1 Million (e.g. UGX 1.5m)
   if (Math.abs(amount) >= 1000000) {
-    return `${symbol} ${(amount / 1000000).toFixed(1)}m`;
+    return `UGX ${(amount / 1000000).toFixed(1)}m`;
   }
 
   // Values >= 1 Thousand (e.g. UGX 50.0k)
   if (Math.abs(amount) >= 1000) {
-    return `${symbol} ${(amount / 1000).toFixed(1)}k`;
+    return `UGX ${(amount / 1000).toFixed(1)}k`;
   }
 
   // Fallback to full format for smaller numbers
-  return formatCurrency(amount, currency);
+  return formatCurrency(amount);
 }
 
 /**

@@ -163,7 +163,6 @@ export function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [baseCurrency, setBaseCurrency] = useState<'UGX' | 'KES' | 'TZS' | 'RWF' | 'USD'>('UGX');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -172,7 +171,7 @@ export function Signup() {
     setError(null);
     setLoading(true);
     try {
-      await register(name, email, password, baseCurrency);
+      await register(name, email, password, 'UGX');
       setLocation('/');
     } catch (err: any) {
       setError(err.message || 'Failed to create account. Please try again.');
@@ -240,26 +239,8 @@ export function Signup() {
           </div>
         </Field>
 
-        <Field label="Primary Currency & Region">
-          <div className="relative">
-            <Coins size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
-            <select
-              value={baseCurrency}
-              onChange={(e) => setBaseCurrency(e.target.value as any)}
-              className={`${inputClass} pl-10 appearance-none`}
-              data-testid="select-signup-currency"
-            >
-              <option value="UGX">UGX — Ugandan Shilling (MTN MoMo / Airtel / Stanbic)</option>
-              <option value="KES">KES — Kenyan Shilling (Safaricom M-Pesa / Equity)</option>
-              <option value="TZS">TZS — Tanzanian Shilling (Vodacom M-Pesa / CRDB)</option>
-              <option value="RWF">RWF — Rwandan Franc (MTN MoMo / BK)</option>
-              <option value="USD">USD — US Dollar</option>
-            </select>
-          </div>
-        </Field>
-
         <div className="rounded-xl bg-secondary/70 p-3 text-xs leading-5 text-muted-foreground">
-          <Check size={14} className="mr-1 inline text-primary" /> Your data stays isolated and private in your authenticated space.
+          <Check size={14} className="mr-1 inline text-primary" /> Your data stays isolated and private in Ugandan Shillings (UGX).
         </div>
 
         <Button type="submit" disabled={loading} className="w-full py-3.5" data-testid="button-signup">

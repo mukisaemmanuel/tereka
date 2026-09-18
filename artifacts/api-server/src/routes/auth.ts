@@ -191,15 +191,15 @@ router.post("/register", async (req, res) => {
         id: userId,
         name: name.trim(),
         email: normalizedEmail,
-        baseCurrency,
+        baseCurrency: "UGX",
       },
       profile: {
         id: profileId,
         userId,
         fullName: name.trim(),
         email: normalizedEmail,
-        country,
-        preferredCurrency: baseCurrency,
+        country: "Uganda",
+        preferredCurrency: "UGX",
         theme: "light",
       },
     });

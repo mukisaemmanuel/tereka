@@ -19,8 +19,13 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary Get the financial command center summary
  */
+export const getDashboardSummaryResponseCurrencyDefault = `UGX`;
+export const getDashboardSummaryResponseRecentTransactionsItemCurrencyDefault = `UGX`;
+export const getDashboardSummaryResponseBudgetStatusItemCurrencyDefault = `UGX`;
+export const getDashboardSummaryResponseGoalProgressItemCurrencyDefault = `UGX`;
+
 export const GetDashboardSummaryResponse = zod.object({
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getDashboardSummaryResponseCurrencyDefault),
   "totalBalance": zod.number(),
   "monthlyIncome": zod.number(),
   "monthlyExpenses": zod.number(),
@@ -41,7 +46,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getDashboardSummaryResponseRecentTransactionsItemCurrencyDefault),
   "accountId": zod.string(),
   "accountName": zod.string(),
   "categoryId": zod.string(),
@@ -56,7 +61,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "categoryName": zod.string(),
   "amount": zod.number(),
   "spent": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getDashboardSummaryResponseBudgetStatusItemCurrencyDefault),
   "period": zod.enum(['monthly']),
   "percentageUsed": zod.number(),
   "status": zod.enum(['on_track', 'warning', 'exceeded'])
@@ -66,7 +71,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "name": zod.string(),
   "targetAmount": zod.number(),
   "currentAmount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getDashboardSummaryResponseGoalProgressItemCurrencyDefault),
   "targetDate": zod.coerce.date(),
   "status": zod.enum(['active', 'completed', 'paused']),
   "percentageComplete": zod.number(),
@@ -97,11 +102,13 @@ export const GetTransactionsQueryParams = zod.object({
   "categoryId": zod.coerce.string().optional()
 })
 
+export const getTransactionsResponseCurrencyDefault = `UGX`;
+
 export const GetTransactionsResponseItem = zod.object({
   "id": zod.string(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getTransactionsResponseCurrencyDefault),
   "accountId": zod.string(),
   "accountName": zod.string(),
   "categoryId": zod.string(),
@@ -118,13 +125,13 @@ export const GetTransactionsResponse = zod.array(GetTransactionsResponseItem)
  */
 export const createTransactionBodyAmountExclusiveMin = 0;
 
-
+export const createTransactionBodyCurrencyDefault = `UGX`;
 
 
 export const CreateTransactionBody = zod.object({
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number().gt(createTransactionBodyAmountExclusiveMin),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createTransactionBodyCurrencyDefault),
   "accountId": zod.string(),
   "categoryId": zod.string(),
   "description": zod.string().min(1),
@@ -132,11 +139,13 @@ export const CreateTransactionBody = zod.object({
   "transactionDate": zod.coerce.date()
 })
 
+export const createTransactionResponseCurrencyDefault = `UGX`;
+
 export const CreateTransactionResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createTransactionResponseCurrencyDefault),
   "accountId": zod.string(),
   "accountName": zod.string(),
   "categoryId": zod.string(),
@@ -156,13 +165,13 @@ export const UpdateTransactionParams = zod.object({
 
 export const updateTransactionBodyAmountExclusiveMin = 0;
 
-
+export const updateTransactionBodyCurrencyDefault = `UGX`;
 
 
 export const UpdateTransactionBody = zod.object({
   "type": zod.enum(['income', 'expense']).optional(),
   "amount": zod.number().gt(updateTransactionBodyAmountExclusiveMin).optional(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']).optional(),
+  "currency": zod.enum(['UGX']).default(updateTransactionBodyCurrencyDefault),
   "accountId": zod.string().optional(),
   "categoryId": zod.string().optional(),
   "description": zod.string().min(1).optional(),
@@ -170,11 +179,13 @@ export const UpdateTransactionBody = zod.object({
   "transactionDate": zod.coerce.date().optional()
 })
 
+export const updateTransactionResponseCurrencyDefault = `UGX`;
+
 export const UpdateTransactionResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['income', 'expense']),
   "amount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(updateTransactionResponseCurrencyDefault),
   "accountId": zod.string(),
   "accountName": zod.string(),
   "categoryId": zod.string(),
@@ -198,11 +209,13 @@ export const DeleteTransactionResponse = zod.void()
 /**
  * @summary List financial accounts
  */
+export const getAccountsResponseCurrencyDefault = `UGX`;
+
 export const GetAccountsResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "type": zod.enum(['cash', 'mobile_money', 'bank', 'savings', 'other']),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getAccountsResponseCurrencyDefault),
   "openingBalance": zod.number(),
   "balance": zod.number(),
   "isActive": zod.boolean()
@@ -214,6 +227,7 @@ export const GetAccountsResponse = zod.array(GetAccountsResponseItem)
  * @summary Create an account
  */
 
+export const createAccountBodyCurrencyDefault = `UGX`;
 export const createAccountBodyOpeningBalanceMin = 0;
 
 
@@ -221,15 +235,17 @@ export const createAccountBodyOpeningBalanceMin = 0;
 export const CreateAccountBody = zod.object({
   "name": zod.string().min(1),
   "type": zod.enum(['cash', 'mobile_money', 'bank', 'savings', 'other']),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createAccountBodyCurrencyDefault),
   "openingBalance": zod.number().min(createAccountBodyOpeningBalanceMin)
 })
+
+export const createAccountResponseCurrencyDefault = `UGX`;
 
 export const CreateAccountResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "type": zod.enum(['cash', 'mobile_money', 'bank', 'savings', 'other']),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createAccountResponseCurrencyDefault),
   "openingBalance": zod.number(),
   "balance": zod.number(),
   "isActive": zod.boolean()
@@ -244,6 +260,7 @@ export const UpdateAccountParams = zod.object({
 })
 
 
+export const updateAccountBodyCurrencyDefault = `UGX`;
 export const updateAccountBodyOpeningBalanceMin = 0;
 
 
@@ -251,16 +268,18 @@ export const updateAccountBodyOpeningBalanceMin = 0;
 export const UpdateAccountBody = zod.object({
   "name": zod.string().min(1).optional(),
   "type": zod.enum(['cash', 'mobile_money', 'bank', 'savings', 'other']).optional(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']).optional(),
+  "currency": zod.enum(['UGX']).default(updateAccountBodyCurrencyDefault),
   "openingBalance": zod.number().min(updateAccountBodyOpeningBalanceMin).optional(),
   "isActive": zod.boolean().optional()
 })
+
+export const updateAccountResponseCurrencyDefault = `UGX`;
 
 export const UpdateAccountResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "type": zod.enum(['cash', 'mobile_money', 'bank', 'savings', 'other']),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(updateAccountResponseCurrencyDefault),
   "openingBalance": zod.number(),
   "balance": zod.number(),
   "isActive": zod.boolean()
@@ -274,11 +293,13 @@ export const ArchiveAccountParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const archiveAccountResponseCurrencyDefault = `UGX`;
+
 export const ArchiveAccountResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "type": zod.enum(['cash', 'mobile_money', 'bank', 'savings', 'other']),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(archiveAccountResponseCurrencyDefault),
   "openingBalance": zod.number(),
   "balance": zod.number(),
   "isActive": zod.boolean()
@@ -326,13 +347,15 @@ export const CreateCategoryResponse = zod.object({
 /**
  * @summary List active budgets
  */
+export const getBudgetsResponseCurrencyDefault = `UGX`;
+
 export const GetBudgetsResponseItem = zod.object({
   "id": zod.string(),
   "categoryId": zod.string(),
   "categoryName": zod.string(),
   "amount": zod.number(),
   "spent": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getBudgetsResponseCurrencyDefault),
   "period": zod.enum(['monthly']),
   "percentageUsed": zod.number(),
   "status": zod.enum(['on_track', 'warning', 'exceeded'])
@@ -345,14 +368,16 @@ export const GetBudgetsResponse = zod.array(GetBudgetsResponseItem)
  */
 export const createBudgetBodyAmountExclusiveMin = 0;
 
-
+export const createBudgetBodyCurrencyDefault = `UGX`;
 
 export const CreateBudgetBody = zod.object({
   "categoryId": zod.string(),
   "amount": zod.number().gt(createBudgetBodyAmountExclusiveMin),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createBudgetBodyCurrencyDefault),
   "period": zod.enum(['monthly'])
 })
+
+export const createBudgetResponseCurrencyDefault = `UGX`;
 
 export const CreateBudgetResponse = zod.object({
   "id": zod.string(),
@@ -360,7 +385,7 @@ export const CreateBudgetResponse = zod.object({
   "categoryName": zod.string(),
   "amount": zod.number(),
   "spent": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createBudgetResponseCurrencyDefault),
   "period": zod.enum(['monthly']),
   "percentageUsed": zod.number(),
   "status": zod.enum(['on_track', 'warning', 'exceeded'])
@@ -376,14 +401,16 @@ export const UpdateBudgetParams = zod.object({
 
 export const updateBudgetBodyAmountExclusiveMin = 0;
 
-
+export const updateBudgetBodyCurrencyDefault = `UGX`;
 
 export const UpdateBudgetBody = zod.object({
   "categoryId": zod.string().optional(),
   "amount": zod.number().gt(updateBudgetBodyAmountExclusiveMin).optional(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']).optional(),
+  "currency": zod.enum(['UGX']).default(updateBudgetBodyCurrencyDefault),
   "period": zod.enum(['monthly']).optional()
 })
+
+export const updateBudgetResponseCurrencyDefault = `UGX`;
 
 export const UpdateBudgetResponse = zod.object({
   "id": zod.string(),
@@ -391,7 +418,7 @@ export const UpdateBudgetResponse = zod.object({
   "categoryName": zod.string(),
   "amount": zod.number(),
   "spent": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(updateBudgetResponseCurrencyDefault),
   "period": zod.enum(['monthly']),
   "percentageUsed": zod.number(),
   "status": zod.enum(['on_track', 'warning', 'exceeded'])
@@ -411,12 +438,14 @@ export const DeleteBudgetResponse = zod.void()
 /**
  * @summary List financial goals
  */
+export const getGoalsResponseCurrencyDefault = `UGX`;
+
 export const GetGoalsResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "targetAmount": zod.number(),
   "currentAmount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getGoalsResponseCurrencyDefault),
   "targetDate": zod.coerce.date(),
   "status": zod.enum(['active', 'completed', 'paused']),
   "percentageComplete": zod.number(),
@@ -433,23 +462,25 @@ export const createGoalBodyTargetAmountExclusiveMin = 0;
 
 export const createGoalBodyCurrentAmountMin = 0;
 
-
+export const createGoalBodyCurrencyDefault = `UGX`;
 
 export const CreateGoalBody = zod.object({
   "name": zod.string().min(1),
   "targetAmount": zod.number().gt(createGoalBodyTargetAmountExclusiveMin),
   "currentAmount": zod.number().min(createGoalBodyCurrentAmountMin),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createGoalBodyCurrencyDefault),
   "targetDate": zod.coerce.date(),
   "status": zod.enum(['active', 'completed', 'paused'])
 })
+
+export const createGoalResponseCurrencyDefault = `UGX`;
 
 export const CreateGoalResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "targetAmount": zod.number(),
   "currentAmount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createGoalResponseCurrencyDefault),
   "targetDate": zod.coerce.date(),
   "status": zod.enum(['active', 'completed', 'paused']),
   "percentageComplete": zod.number(),
@@ -469,23 +500,25 @@ export const updateGoalBodyTargetAmountExclusiveMin = 0;
 
 export const updateGoalBodyCurrentAmountMin = 0;
 
-
+export const updateGoalBodyCurrencyDefault = `UGX`;
 
 export const UpdateGoalBody = zod.object({
   "name": zod.string().min(1).optional(),
   "targetAmount": zod.number().gt(updateGoalBodyTargetAmountExclusiveMin).optional(),
   "currentAmount": zod.number().min(updateGoalBodyCurrentAmountMin).optional(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']).optional(),
+  "currency": zod.enum(['UGX']).default(updateGoalBodyCurrencyDefault),
   "targetDate": zod.coerce.date().optional(),
   "status": zod.enum(['active', 'completed', 'paused']).optional()
 })
+
+export const updateGoalResponseCurrencyDefault = `UGX`;
 
 export const UpdateGoalResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "targetAmount": zod.number(),
   "currentAmount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(updateGoalResponseCurrencyDefault),
   "targetDate": zod.coerce.date(),
   "status": zod.enum(['active', 'completed', 'paused']),
   "percentageComplete": zod.number(),
@@ -506,13 +539,15 @@ export const DeleteGoalResponse = zod.void()
 /**
  * @summary Fetch all active and settled debts
  */
+export const getDebtsResponseCurrencyDefault = `UGX`;
+
 export const GetDebtsResponseItem = zod.object({
   "id": zod.string(),
   "personOrEntity": zod.string(),
   "type": zod.enum(['owed_to_you', 'you_owe']),
   "principalAmount": zod.number(),
   "remainingAmount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(getDebtsResponseCurrencyDefault),
   "dueDate": zod.string().nullish(),
   "status": zod.enum(['active', 'settled']),
   "notes": zod.string().nullish(),
@@ -538,17 +573,19 @@ export const GetDebtsResponse = zod.array(GetDebtsResponseItem)
 
 export const createDebtBodyPrincipalAmountExclusiveMin = 0;
 
-
+export const createDebtBodyCurrencyDefault = `UGX`;
 
 export const CreateDebtBody = zod.object({
   "personOrEntity": zod.string().min(1),
   "type": zod.enum(['owed_to_you', 'you_owe']),
   "principalAmount": zod.number().gt(createDebtBodyPrincipalAmountExclusiveMin),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createDebtBodyCurrencyDefault),
   "dueDate": zod.string().optional(),
   "notes": zod.string().optional(),
   "accountId": zod.string().optional()
 })
+
+export const createDebtResponseCurrencyDefault = `UGX`;
 
 export const CreateDebtResponse = zod.object({
   "id": zod.string(),
@@ -556,7 +593,7 @@ export const CreateDebtResponse = zod.object({
   "type": zod.enum(['owed_to_you', 'you_owe']),
   "principalAmount": zod.number(),
   "remainingAmount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(createDebtResponseCurrencyDefault),
   "dueDate": zod.string().nullish(),
   "status": zod.enum(['active', 'settled']),
   "notes": zod.string().nullish(),
@@ -593,13 +630,15 @@ export const PayDebtBody = zod.object({
   "paidAt": zod.string().optional()
 })
 
+export const payDebtResponseCurrencyDefault = `UGX`;
+
 export const PayDebtResponse = zod.object({
   "id": zod.string(),
   "personOrEntity": zod.string(),
   "type": zod.enum(['owed_to_you', 'you_owe']),
   "principalAmount": zod.number(),
   "remainingAmount": zod.number(),
-  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "currency": zod.enum(['UGX']).default(payDebtResponseCurrencyDefault),
   "dueDate": zod.string().nullish(),
   "status": zod.enum(['active', 'settled']),
   "notes": zod.string().nullish(),
@@ -689,12 +728,14 @@ export const SendAssistantMessageResponse = zod.array(SendAssistantMessageRespon
 /**
  * @summary Get the current profile
  */
+export const getProfileResponsePreferredCurrencyDefault = `UGX`;
+
 export const GetProfileResponse = zod.object({
   "id": zod.string(),
   "fullName": zod.string(),
   "email": zod.string(),
   "country": zod.string(),
-  "preferredCurrency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "preferredCurrency": zod.enum(['UGX']).default(getProfileResponsePreferredCurrencyDefault),
   "theme": zod.enum(['light', 'dark', 'system'])
 })
 
@@ -703,21 +744,23 @@ export const GetProfileResponse = zod.object({
  * @summary Update profile preferences
  */
 
-
+export const updateProfileBodyPreferredCurrencyDefault = `UGX`;
 
 export const UpdateProfileBody = zod.object({
   "fullName": zod.string().min(1).optional(),
   "country": zod.string().optional(),
-  "preferredCurrency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']).optional(),
+  "preferredCurrency": zod.enum(['UGX']).default(updateProfileBodyPreferredCurrencyDefault),
   "theme": zod.enum(['light', 'dark', 'system']).optional()
 })
+
+export const updateProfileResponsePreferredCurrencyDefault = `UGX`;
 
 export const UpdateProfileResponse = zod.object({
   "id": zod.string(),
   "fullName": zod.string(),
   "email": zod.string(),
   "country": zod.string(),
-  "preferredCurrency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "preferredCurrency": zod.enum(['UGX']).default(updateProfileResponsePreferredCurrencyDefault),
   "theme": zod.enum(['light', 'dark', 'system'])
 })
 
