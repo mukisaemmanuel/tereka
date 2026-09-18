@@ -31,6 +31,9 @@ import type {
   Conversation,
   ConversationInput,
   DashboardSummary,
+  Debt,
+  DebtInput,
+  DebtPaymentInput,
   FinancialGoal,
   FinancialInsight,
   GetCategoriesParams,
@@ -1629,6 +1632,226 @@ export const useDeleteGoal = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteGoalMutationOptions(options));
+    }
+
+export const getGetDebtsUrl = () => {
+
+
+
+
+  return `/api/debts`
+}
+
+/**
+ * @summary Fetch all active and settled debts
+ */
+export const getDebts = async ( options?: Parameters<typeof customFetch>[1]): Promise<Debt[]> => {
+
+  return customFetch<Debt[]>(getGetDebtsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDebtsQueryKey = () => {
+    return [
+    `/api/debts`
+    ] as const;
+    }
+
+
+export const getGetDebtsQueryOptions = <TData = Awaited<ReturnType<typeof getDebts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDebtsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDebts>>> = ({ signal }) => getDebts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDebts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDebtsQueryResult = NonNullable<Awaited<ReturnType<typeof getDebts>>>
+export type GetDebtsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Fetch all active and settled debts
+ */
+
+export function useGetDebts<TData = Awaited<ReturnType<typeof getDebts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDebts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDebtsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateDebtUrl = () => {
+
+
+
+
+  return `/api/debts`
+}
+
+/**
+ * @summary Create a debt
+ */
+export const createDebt = async (debtInput: DebtInput, options?: Parameters<typeof customFetch>[1]): Promise<Debt> => {
+
+  return customFetch<Debt>(getCreateDebtUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debtInput)
+  }
+);}
+
+
+
+
+
+export const getCreateDebtMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDebt>>, TError,{data: BodyType<DebtInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDebt>>, TError,{data: BodyType<DebtInput>}, TContext> => {
+
+const mutationKey = ['createDebt'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDebt>>, {data: BodyType<DebtInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDebt(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDebtMutationResult = NonNullable<Awaited<ReturnType<typeof createDebt>>>
+    export type CreateDebtMutationBody = BodyType<DebtInput>
+    export type CreateDebtMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a debt
+ */
+export const useCreateDebt = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDebt>>, TError,{data: BodyType<DebtInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDebt>>,
+        TError,
+        {data: BodyType<DebtInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDebtMutationOptions(options));
+    }
+
+export const getPayDebtUrl = (id: string,) => {
+
+
+
+
+  return `/api/debts/${id}/pay`
+}
+
+/**
+ * @summary Record a partial or full payment on a debt
+ */
+export const payDebt = async (id: string,
+    debtPaymentInput: DebtPaymentInput, options?: Parameters<typeof customFetch>[1]): Promise<Debt> => {
+
+  return customFetch<Debt>(getPayDebtUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(debtPaymentInput)
+  }
+);}
+
+
+
+
+
+export const getPayDebtMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof payDebt>>, TError,{id: string;data: BodyType<DebtPaymentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof payDebt>>, TError,{id: string;data: BodyType<DebtPaymentInput>}, TContext> => {
+
+const mutationKey = ['payDebt'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof payDebt>>, {id: string;data: BodyType<DebtPaymentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  payDebt(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PayDebtMutationResult = NonNullable<Awaited<ReturnType<typeof payDebt>>>
+    export type PayDebtMutationBody = BodyType<DebtPaymentInput>
+    export type PayDebtMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Record a partial or full payment on a debt
+ */
+export const usePayDebt = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof payDebt>>, TError,{id: string;data: BodyType<DebtPaymentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof payDebt>>,
+        TError,
+        {id: string;data: BodyType<DebtPaymentInput>},
+        TContext
+      > => {
+      return useMutation(getPayDebtMutationOptions(options));
     }
 
 export const getGetConversationsUrl = () => {

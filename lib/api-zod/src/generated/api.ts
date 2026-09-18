@@ -504,6 +504,121 @@ export const DeleteGoalResponse = zod.void()
 
 
 /**
+ * @summary Fetch all active and settled debts
+ */
+export const GetDebtsResponseItem = zod.object({
+  "id": zod.string(),
+  "personOrEntity": zod.string(),
+  "type": zod.enum(['owed_to_you', 'you_owe']),
+  "principalAmount": zod.number(),
+  "remainingAmount": zod.number(),
+  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "dueDate": zod.string().nullish(),
+  "status": zod.enum(['active', 'settled']),
+  "notes": zod.string().nullish(),
+  "accountId": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "debtId": zod.string(),
+  "amount": zod.number(),
+  "accountId": zod.string().nullish(),
+  "accountName": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "paidAt": zod.coerce.date()
+})).optional()
+})
+export const GetDebtsResponse = zod.array(GetDebtsResponseItem)
+
+
+/**
+ * @summary Create a debt
+ */
+
+export const createDebtBodyPrincipalAmountExclusiveMin = 0;
+
+
+
+export const CreateDebtBody = zod.object({
+  "personOrEntity": zod.string().min(1),
+  "type": zod.enum(['owed_to_you', 'you_owe']),
+  "principalAmount": zod.number().gt(createDebtBodyPrincipalAmountExclusiveMin),
+  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "dueDate": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "accountId": zod.string().optional()
+})
+
+export const CreateDebtResponse = zod.object({
+  "id": zod.string(),
+  "personOrEntity": zod.string(),
+  "type": zod.enum(['owed_to_you', 'you_owe']),
+  "principalAmount": zod.number(),
+  "remainingAmount": zod.number(),
+  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "dueDate": zod.string().nullish(),
+  "status": zod.enum(['active', 'settled']),
+  "notes": zod.string().nullish(),
+  "accountId": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "debtId": zod.string(),
+  "amount": zod.number(),
+  "accountId": zod.string().nullish(),
+  "accountName": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "paidAt": zod.coerce.date()
+})).optional()
+})
+
+
+/**
+ * @summary Record a partial or full payment on a debt
+ */
+export const PayDebtParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const payDebtBodyAmountExclusiveMin = 0;
+
+
+
+export const PayDebtBody = zod.object({
+  "amount": zod.number().gt(payDebtBodyAmountExclusiveMin),
+  "accountId": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "paidAt": zod.string().optional()
+})
+
+export const PayDebtResponse = zod.object({
+  "id": zod.string(),
+  "personOrEntity": zod.string(),
+  "type": zod.enum(['owed_to_you', 'you_owe']),
+  "principalAmount": zod.number(),
+  "remainingAmount": zod.number(),
+  "currency": zod.enum(['UGX', 'KES', 'TZS', 'RWF', 'USD']),
+  "dueDate": zod.string().nullish(),
+  "status": zod.enum(['active', 'settled']),
+  "notes": zod.string().nullish(),
+  "accountId": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.string(),
+  "debtId": zod.string(),
+  "amount": zod.number(),
+  "accountId": zod.string().nullish(),
+  "accountName": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "paidAt": zod.coerce.date()
+})).optional()
+})
+
+
+/**
  * @summary List assistant conversations
  */
 export const GetConversationsResponseItem = zod.object({

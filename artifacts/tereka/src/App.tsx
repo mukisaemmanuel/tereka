@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Accounts, Budgets, Dashboard, Goals, Settings, Transactions, Assistant } from '@/pages/finance';
+import { Debts } from '@/pages/debts';
 import { ForgotPassword, Login, Signup } from '@/pages/auth';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import {
@@ -77,6 +78,9 @@ function Router() {
         </Route>
         <Route path="/budgets">
           <ProtectedRoute component={Budgets} />
+        </Route>
+        <Route path="/debts">
+          <ProtectedRoute component={Debts} />
         </Route>
         <Route path="/goals">
           <ProtectedRoute component={Goals} />

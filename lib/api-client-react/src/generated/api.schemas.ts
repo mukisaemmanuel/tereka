@@ -245,6 +245,74 @@ export interface GoalUpdate {
   status?: GoalUpdateStatus;
 }
 
+export type DebtType = typeof DebtType[keyof typeof DebtType];
+
+
+export const DebtType = {
+  owed_to_you: 'owed_to_you',
+  you_owe: 'you_owe',
+} as const;
+
+export type DebtStatus = typeof DebtStatus[keyof typeof DebtStatus];
+
+
+export const DebtStatus = {
+  active: 'active',
+  settled: 'settled',
+} as const;
+
+export interface DebtPayment {
+  id: string;
+  debtId: string;
+  amount: number;
+  /** @nullable */
+  accountId?: string | null;
+  /** @nullable */
+  accountName?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  paidAt: string;
+}
+
+export interface DebtPaymentInput {
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  accountId?: string;
+  notes?: string;
+  paidAt?: string;
+}
+
+export interface Debt {
+  id: string;
+  personOrEntity: string;
+  type: DebtType;
+  principalAmount: number;
+  remainingAmount: number;
+  currency: Currency;
+  /** @nullable */
+  dueDate?: string | null;
+  status: DebtStatus;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  accountId?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  payments?: DebtPayment[];
+}
+
+export interface DebtInput {
+  /** @minLength 1 */
+  personOrEntity: string;
+  type: DebtType;
+  /** @exclusiveMinimum 0 */
+  principalAmount: number;
+  currency: Currency;
+  dueDate?: string;
+  notes?: string;
+  accountId?: string;
+}
+
 export interface CategorySpend {
   categoryName: string;
   amount: number;

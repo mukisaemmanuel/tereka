@@ -15,6 +15,7 @@ tags:
   - name: categories
   - name: budgets
   - name: goals
+  - name: debts
   - name: assistant
   - name: profile
 paths:
@@ -338,6 +339,57 @@ paths:
       responses:
         "204":
           description: Deleted
+  /debts:
+    get:
+      operationId: getDebts
+      tags: [debts]
+      summary: Fetch all active and settled debts
+      responses:
+        "200":
+          description: List of debts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Debt"
+    post:
+      operationId: createDebt
+      tags: [debts]
+      summary: Create a debt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtInput"
+      responses:
+        "201":
+          description: Created debt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Debt"
+  /debts/{id}/pay:
+    post:
+      operationId: payDebt
+      tags: [debts]
+      summary: Record a partial or full payment on a debt
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtPaymentInput"
+      responses:
+        "200":
+          description: Updated debt after payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Debt"
   /assistant/conversations:
     get:
       operationId: getConversations
@@ -470,7 +522,8 @@ components:
           type: string
     Currency:
       type: string
-      enum: [UGX, KES, TZS, RWF, USD]
+      enum: [UGX]
+      default: UGX
     TransactionType:
       type: string
       enum: [income, expense]
@@ -638,6 +691,67 @@ components:
           $ref: "#/components/schemas/Currency"
         targetDate: { type: string, format: date }
         status: { type: string, enum: [active, completed, paused] }
+    DebtType:
+      type: string
+      enum: [owed_to_you, you_owe]
+    DebtStatus:
+      type: string
+      enum: [active, settled]
+    DebtPayment:
+      type: object
+      required: [id, debtId, amount, paidAt]
+      properties:
+        id: { type: string }
+        debtId: { type: string }
+        amount: { type: number }
+        accountId: { type: ["string", "null"] }
+        accountName: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        paidAt: { type: string, format: date-time }
+    DebtPaymentInput:
+      type: object
+      required: [amount]
+      properties:
+        amount: { type: number, exclusiveMinimum: 0 }
+        accountId: { type: string }
+        notes: { type: string }
+        paidAt: { type: string }
+    Debt:
+      type: object
+      required: [id, personOrEntity, type, principalAmount, remainingAmount, currency, status, createdAt]
+      properties:
+        id: { type: string }
+        personOrEntity: { type: string }
+        type:
+          $ref: "#/components/schemas/DebtType"
+        principalAmount: { type: number }
+        remainingAmount: { type: number }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        dueDate: { type: ["string", "null"] }
+        status:
+          $ref: "#/components/schemas/DebtStatus"
+        notes: { type: ["string", "null"] }
+        accountId: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DebtPayment"
+    DebtInput:
+      type: object
+      required: [personOrEntity, type, principalAmount, currency]
+      properties:
+        personOrEntity: { type: string, minLength: 1 }
+        type:
+          $ref: "#/components/schemas/DebtType"
+        principalAmount: { type: number, exclusiveMinimum: 0 }
+        currency:
+          $ref: "#/components/schemas/Currency"
+        dueDate: { type: string }
+        notes: { type: string }
+        accountId: { type: string }
     DashboardSummary:
       type: object
       required: [currency, totalBalance, monthlyIncome, monthlyExpenses, remainingBudget, balanceChange, spendingByCategory, incomeVsExpenses, recentTransactions, budgetStatus, goalProgress]

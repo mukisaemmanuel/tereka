@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { getGetProfileQueryKey, useGetProfile, useUpdateProfile } from '@workspace/api-client-react';
-import { Bot, CircleHelp, Gauge, Goal, LayoutGrid, LogOut, Menu, Moon, PiggyBank, ReceiptText, Settings, Sparkles, Sun, WalletCards, X } from 'lucide-react';
+import { Bot, CircleHelp, Gauge, Goal, Handshake, LayoutGrid, LogOut, Menu, Moon, PiggyBank, ReceiptText, Settings, Sparkles, Sun, WalletCards, X } from 'lucide-react';
 import { initials } from '@/lib/finance';
 import { applyTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth-context';
@@ -12,6 +12,7 @@ const nav = [
   { href: '/transactions', label: 'Transactions', icon: ReceiptText },
   { href: '/accounts', label: 'Accounts', icon: WalletCards },
   { href: '/budgets', label: 'Budgets', icon: LayoutGrid },
+  { href: '/debts', label: 'Debts & Owed', icon: Handshake },
   { href: '/goals', label: 'Goals', icon: Goal },
   { href: '/assistant', label: 'Tereka AI', icon: Sparkles },
 ];
