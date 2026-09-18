@@ -2,26 +2,77 @@
 
 Tereka is a modern personal financial intelligence platform designed to help users understand their cashflow, manage transactions, track accounts, monitor category budgets, achieve savings goals, and interact with an AI financial assistant.
 
-## Run & Operate
+## Quick Start Guide: How to Run the System
 
-### Development Servers
-- **Frontend App (Vite)**: `pnpm --filter @workspace/tereka run dev`
-  - Runs on `http://127.0.0.1:5180` (or configured `PORT`)
-  - Proxies `/api/*` calls automatically to backend at `http://127.0.0.1:5050`
-- **Backend API (Express)**: `pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/api-server run start`
-  - Runs on `http://127.0.0.1:5050` (or configured `PORT`)
-  - Health endpoint: `http://127.0.0.1:5050/api/healthz`
+Tereka consists of two servers running together:
+1. **Backend API Server** (Express) on `http://localhost:5050`
+2. **Frontend Web App** (Vite + React) on `http://localhost:5180`
 
-### Workspace Build & Validation
-- `pnpm run typecheck` — full TypeScript typecheck across all workspace packages and libraries
-- `pnpm run build` — typecheck and production build of all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate client React Query hooks and Zod schemas from `lib/api-spec/openapi.yaml`
-- `pnpm --filter @workspace/db run push` — push Drizzle ORM schema to Postgres (dev)
+---
 
-### Environment Variables
-- `DATABASE_URL` — PostgreSQL connection string (e.g. `postgresql://user:password@localhost:5432/tereka`)
-- `PORT` — Port override for server and frontend processes
-- `BASE_PATH` — Base URL path (defaults to `/`)
+### Step 1: Install Dependencies
+Open your terminal in the root project directory and run:
+```bash
+pnpm install
+```
+
+---
+
+### Step 2: Push Database Schema (PostgreSQL)
+Ensure your `DATABASE_URL` environment variable is set (or configured in your `.env` file):
+```bash
+npx drizzle-kit push
+```
+
+---
+
+### Step 3: Start the Backend API Server (Terminal 1)
+Open a terminal and run:
+```bash
+# Build the backend bundle
+pnpm --filter @workspace/api-server run build
+
+# Start the API server
+pnpm --filter @workspace/api-server run start
+```
+* **API URL**: `http://localhost:5050`
+* **Health Check**: `http://localhost:5050/api/healthz` (should return `{"status":"ok"}`)
+
+---
+
+### Step 4: Start the Frontend App (Terminal 2)
+Open a second terminal window and run:
+```bash
+pnpm --filter @workspace/tereka run dev
+```
+* **App URL**: `http://localhost:5180`
+* The frontend automatically proxies all `/api/*` requests to `http://localhost:5050`.
+
+---
+
+### Step 5: Open in Your Browser
+Visit [`http://localhost:5180`](http://localhost:5180) in your web browser.
+
+---
+
+## Workspace Commands
+
+| Task | Command | Description |
+| :--- | :--- | :--- |
+| **Typecheck** | `pnpm run typecheck` | Run full TypeScript typecheck across all packages |
+| **Full Build** | `pnpm run build` | Build all workspace libraries and artifacts |
+| **Push DB** | `npx drizzle-kit push` | Push Drizzle schema directly to PostgreSQL |
+| **Regen API** | `pnpm --filter @workspace/api-spec run codegen` | Regenerate React Query hooks & Zod schemas from OpenAPI |
+
+---
+
+## Environment Variables
+
+| Variable | Default / Example | Purpose |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `postgresql://postgres:password@localhost:5432/tereka` | PostgreSQL connection string |
+| `PORT` | `5050` (backend) / `5180` (frontend) | Port overrides |
+| `NODE_ENV` | `development` / `production` | Environment mode |
 
 ## Stack
 
