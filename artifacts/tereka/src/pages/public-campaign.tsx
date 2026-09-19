@@ -17,36 +17,40 @@ import {
 } from 'lucide-react';
 import { formatCurrency, dateLabel } from '@/lib/finance';
 
-interface PublicCampaignData {
-  campaign: {
-    id: string;
-    slug: string;
-    title: string;
-    description: string | null;
-    type: 'kwanjula' | 'wedding' | 'mabugo' | 'medical' | 'graduation' | 'general';
-    targetAmount: number;
-    currency: string;
-    deadline: string | null;
-    recipientPhone?: string | null;
-    recipientName?: string | null;
-    imageUrl: string | null;
-    status: 'active' | 'completed' | 'paused';
-    totalRaised: number;
-    remainingAmount: number;
-    contributorsCount: number;
-    percentageComplete: number;
-    organizerName?: string;
-  };
-  contributions: Array<{
-    id: string;
-    contributorName: string;
-    amount: number;
-    currency: string;
-    paymentMethod: string;
-    message: string | null;
-    isAnonymous: boolean;
-    paidAt: string;
-  }>;
+export interface PublicContribution {
+  id: string;
+  contributorName: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  message: string | null;
+  isAnonymous: boolean;
+  paidAt: string;
+}
+
+export interface PublicCampaignInfo {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  type: 'kwanjula' | 'wedding' | 'mabugo' | 'medical' | 'graduation' | 'general';
+  targetAmount: number;
+  currency: string;
+  deadline: string | null;
+  recipientPhone?: string | null;
+  recipientName?: string | null;
+  imageUrl: string | null;
+  status: 'active' | 'completed' | 'paused';
+  totalRaised: number;
+  remainingAmount: number;
+  contributorsCount: number;
+  percentageComplete: number;
+  organizerName?: string;
+}
+
+export interface PublicCampaignData extends PublicCampaignInfo {
+  campaign?: PublicCampaignInfo;
+  contributions: PublicContribution[];
 }
 
 const PRESET_AMOUNTS = [20000, 50000, 100000, 250000, 500000];
@@ -221,9 +225,10 @@ export function PublicCampaign({ slug: propSlug }: { slug?: string }) {
     );
   }
 
-  const { campaign, contributions } = data;
-  const theme = EVENT_TYPE_THEMES[campaign.type] || EVENT_TYPE_THEMES.general;
-  const isFinished = campaign.percentageComplete >= 100;
+  const campaign: PublicCampaignInfo = (data as any).campaign || data;
+  const contributions: PublicContribution[] = (data as any).contributions || [];
+  const theme = (campaign?.type && EVENT_TYPE_THEMES[campaign.type]) || EVENT_TYPE_THEMES.general;
+  const isFinished = (campaign?.percentageComplete || 0) >= 100;
 
   return (
     <div className="min-h-[100dvh] bg-[#f8faf9] text-foreground antialiased dark:bg-[#0c1411]">
@@ -614,7 +619,7 @@ export function PublicCampaign({ slug: propSlug }: { slug?: string }) {
                 </div>
               ) : (
                 <div className="mt-4 max-h-[500px] space-y-3 overflow-y-auto pr-1">
-                  {contributions.map((c) => (
+                  {contributions.map((c: PublicContribution) => (
                     <div
                       key={c.id}
                       className="rounded-2xl border border-border/70 bg-secondary/30 p-3.5 transition-colors hover:bg-secondary/60"

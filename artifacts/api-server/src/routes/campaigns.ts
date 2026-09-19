@@ -282,7 +282,7 @@ router.get("/public/campaigns/:slug", async (req, res) => {
       paidAt: c.paidAt,
     }));
 
-    return res.json({
+    const campaignData = {
       id: campaign.id,
       slug: campaign.slug,
       title: campaign.title,
@@ -301,6 +301,11 @@ router.get("/public/campaigns/:slug", async (req, res) => {
       remainingAmount: Math.max(0, campaign.targetAmount - totalRaised),
       contributorsCount: contributions.length,
       percentageComplete,
+    };
+
+    return res.json({
+      ...campaignData,
+      campaign: campaignData,
       contributions: publicContributions,
     });
   } catch (err: any) {
