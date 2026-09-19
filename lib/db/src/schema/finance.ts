@@ -248,7 +248,53 @@ export const aiMessagesTable = pgTable("ai_messages", {
 
 /**
  * ------------------------------------------------------------------------------
- * 12. ZOD INSERT SCHEMAS & TYPES
+ * 12. CAMPAIGNS TABLE (COMMUNITY & EVENT FUNDRAISING)
+ * ------------------------------------------------------------------------------
+ * Handles event fundraising (Kwanjula, Wedding, Mabugo / Funerals, Medical, etc.).
+ * Includes event image support (`imageUrl`), destination wallet, target progress,
+ * and public shareable slug.
+ */
+export const campaignsTable = pgTable("campaigns", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: text("type").notNull().default("general"), // 'kwanjula' | 'wedding' | 'mabugo' | 'medical' | 'graduation' | 'general'
+  targetAmount: integer("target_amount").notNull(),
+  currency: text("currency").notNull().default("UGX"),
+  deadline: date("deadline", { mode: "string" }),
+  accountId: text("account_id"), // Linked wallet/bank for funds (e.g. MTN MoMo, Airtel Money)
+  imageUrl: text("image_url"), // Event flyer, banner, or image URL
+  status: text("status").notNull().default("active"), // 'active' | 'completed' | 'paused'
+  ...timestamps,
+});
+
+/**
+ * ------------------------------------------------------------------------------
+ * 13. CAMPAIGN CONTRIBUTIONS TABLE
+ * ------------------------------------------------------------------------------
+ * Real-time community contributions with contributor name, phone, payment method,
+ * and supportive messages.
+ */
+export const campaignContributionsTable = pgTable("campaign_contributions", {
+  id: text("id").primaryKey(),
+  campaignId: text("campaign_id").notNull(),
+  contributorName: text("contributor_name").notNull(),
+  contributorPhone: text("contributor_phone"),
+  amount: integer("amount").notNull(),
+  currency: text("currency").notNull().default("UGX"),
+  paymentMethod: text("payment_method").notNull().default("mtn_momo"), // 'mtn_momo' | 'airtel_money' | 'bank_transfer' | 'cash'
+  reference: text("reference"),
+  message: text("message"),
+  isAnonymous: boolean("is_anonymous").notNull().default(false),
+  paidAt: timestamp("paid_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * ------------------------------------------------------------------------------
+ * 14. ZOD INSERT SCHEMAS & TYPES
  * ------------------------------------------------------------------------------
  * Generated Drizzle-Zod schemas for runtime schema validation and TypeScript inference.
  */
@@ -264,6 +310,8 @@ export const insertDebtSchema = createInsertSchema(debtsTable).omit({ createdAt:
 export const insertDebtPaymentSchema = createInsertSchema(debtPaymentsTable).omit({ createdAt: true });
 export const insertConversationSchema = createInsertSchema(aiConversationsTable).omit({ createdAt: true, updatedAt: true });
 export const insertMessageSchema = createInsertSchema(aiMessagesTable).omit({ createdAt: true });
+export const insertCampaignSchema = createInsertSchema(campaignsTable).omit({ createdAt: true, updatedAt: true });
+export const insertCampaignContributionSchema = createInsertSchema(campaignContributionsTable).omit({ createdAt: true });
 
 export type User = z.infer<typeof insertUserSchema>;
 export type Profile = z.infer<typeof insertProfileSchema>;
@@ -277,3 +325,5 @@ export type Debt = z.infer<typeof insertDebtSchema>;
 export type DebtPayment = z.infer<typeof insertDebtPaymentSchema>;
 export type Conversation = z.infer<typeof insertConversationSchema>;
 export type Message = z.infer<typeof insertMessageSchema>;
+export type Campaign = z.infer<typeof insertCampaignSchema>;
+export type CampaignContribution = z.infer<typeof insertCampaignContributionSchema>;

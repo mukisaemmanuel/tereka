@@ -6,6 +6,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { Accounts, Budgets, Dashboard, Goals, Settings, Transactions, Assistant } from '@/pages/finance';
 import { Debts } from '@/pages/debts';
+import { Campaigns } from '@/pages/campaigns';
+import { PublicCampaign } from '@/pages/public-campaign';
 import { ForgotPassword, Login, Signup } from '@/pages/auth';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import {
@@ -82,6 +84,9 @@ function Router() {
         <Route path="/debts">
           <ProtectedRoute component={Debts} />
         </Route>
+        <Route path="/campaigns">
+          <ProtectedRoute component={Campaigns} />
+        </Route>
         <Route path="/goals">
           <ProtectedRoute component={Goals} />
         </Route>
@@ -90,6 +95,10 @@ function Router() {
         </Route>
         <Route path="/settings">
           <ProtectedRoute component={Settings} />
+        </Route>
+
+        <Route path="/c/:slug">
+          {({ slug }) => <PublicCampaign slug={slug} />}
         </Route>
 
         <Route path="/login">
