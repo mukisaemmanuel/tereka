@@ -117,10 +117,13 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     banner,
   });
 
-  // 2. Build Vercel Serverless Function (root api/index.js)
+  // 2. Build Vercel Serverless Functions (root api/index.js and api/[...slug].js)
   const rootApiDir = path.resolve(artifactDir, "../../api");
   await esbuild({
-    entryPoints: { index: path.resolve(artifactDir, "src/vercel.ts") },
+    entryPoints: {
+      index: path.resolve(artifactDir, "src/vercel.ts"),
+      "[...slug]": path.resolve(artifactDir, "src/vercel.ts"),
+    },
     platform: "node",
     bundle: true,
     format: "esm",
