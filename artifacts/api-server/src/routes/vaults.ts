@@ -604,7 +604,7 @@ router.get("/vaults/:id/proposals", async (req: AuthenticatedRequest, res: Respo
 router.post("/vaults/proposals/:proposalId/vote", async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!;
-    const { proposalId } = req.params;
+    const proposalId = String(req.params.proposalId);
 
     const parsed = CastVoteSchema.safeParse(req.body);
     if (!parsed.success) {

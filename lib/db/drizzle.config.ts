@@ -1,6 +1,11 @@
+/// <reference types="node" />
 import { defineConfig } from "drizzle-kit";
-import path from "path";
-import fs from "fs";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Fallback to reading .env from root if not already in process.env
 if (!process.env.DATABASE_URL) {
@@ -25,11 +30,10 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default defineConfig({
-  schema: path.resolve(__dirname, "./src/schema/index.ts").replace(/\\/g, "/"),
+  schema: "./src/schema/index.ts",
   dialect: "postgresql",
   schemaFilter: ["public"],
   dbCredentials: {
     url: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
   },
 });
