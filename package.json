@@ -2,8 +2,9 @@
   "name": "workspace",
   "version": "0.0.0",
   "license": "MIT",
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
-    "build": "pnpm --filter @workspace/tereka run build && node -e \"const fs=require('fs'); fs.mkdirSync('dist', {recursive:true}); fs.cpSync('artifacts/tereka/dist', 'dist', {recursive:true});\"",
+    "build": "node scripts/build.mjs",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
