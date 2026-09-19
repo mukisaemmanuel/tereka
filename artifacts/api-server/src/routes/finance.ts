@@ -64,6 +64,7 @@ import {
   debtPaymentsTable,
   aiConversationsTable,
   aiMessagesTable,
+  vaultsTable,
 } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
 
@@ -1853,6 +1854,236 @@ router.get("/assistant/conversations/:id/messages", async (req: AuthenticatedReq
 });
 
 /**
+ * Generates an intelligent, live PostgreSQL-grounded financial advisory reply.
+ */
+async function generateFinancialAdvisorReply(userId: string, userText: string): Promise<string> {
+  const query = userText.toLowerCase().trim();
+
+  // 1. Fetch live financial picture in parallel
+  const [goals, accounts, budgets, categories, debts, vaults, userProfile] = await Promise.all([
+    db.select().from(financialGoalsTable).where(eq(financialGoalsTable.userId, userId)).orderBy(desc(financialGoalsTable.createdAt)),
+    db.select().from(accountsTable).where(and(eq(accountsTable.userId, userId), eq(accountsTable.isActive, true))),
+    db.select().from(budgetsTable).where(eq(budgetsTable.userId, userId)),
+    db.select().from(categoriesTable).where(or(eq(categoriesTable.userId, userId), eq(categoriesTable.isDefault, true))),
+    db.select().from(debtsTable).where(eq(debtsTable.userId, userId)),
+    db.select().from(vaultsTable).where(eq(vaultsTable.creatorUserId, userId)),
+    db.select().from(profilesTable).where(eq(profilesTable.userId, userId)).limit(1),
+  ]);
+
+  const catMap = new Map(categories.map((c) => [c.id, c.name]));
+
+  // Live account balances
+  const accountBalances = await Promise.all(
+    accounts.map(async (acc) => {
+      const bal = await computeAccountBalance(userId, acc.id, Number(acc.openingBalance));
+      return { ...acc, liveBalance: bal };
+    })
+  );
+  const totalSpendingCash = accountBalances.reduce((sum, a) => sum + a.liveBalance, 0);
+
+  // Committed locked savings
+  const totalCommittedSavings = goals.reduce((sum, g) => sum + Number(g.currentAmount), 0);
+
+  // Month prefix for budgets
+  const now = new Date();
+  const currentMonthPrefix = now.toISOString().slice(0, 7);
+  const monthTxs = await db
+    .select()
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.type, "expense"),
+        sql`${transactionsTable.transactionDate} LIKE ${currentMonthPrefix + "%"}`
+      )
+    );
+
+  // Match intent:
+  // A. GOALS & SAVINGS
+  if (
+    query.includes("goal") ||
+    query.includes("saving") ||
+    query.includes("target") ||
+    query.includes("car") ||
+    query.includes("land") ||
+    query.includes("cushion") ||
+    query.includes("emergency") ||
+    query.includes("locked") ||
+    query.includes("cooling")
+  ) {
+    if (goals.length === 0) {
+      return `You currently have no active savings goals set up. 
+
+You can create one from the Goals tab (such as "Buy Car", "Land Deposit", or "Emergency Cushion"). With Tereka's 24-Hour Cooling-Off lock, your money will be protected from impulse withdrawals until you deliberately wait out the cooling-off reflection period!`;
+    }
+
+    const lines = goals.map((g, idx) => {
+      const current = Number(g.currentAmount);
+      const target = Number(g.targetAmount);
+      const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+      const remaining = Math.max(0, target - current);
+      const lockStatus = g.isLocked ? `🔒 Protected by ${g.cooldownHours || 24}h cooling-off lock` : `🔓 Unlocked`;
+      const pendingAlert = g.pendingWithdrawalAmount
+        ? `\n   ⚠️ *Cooling-Off Active*: Withdrawal of UGX ${Number(g.pendingWithdrawalAmount).toLocaleString()} requested.`
+        : "";
+
+      return `${idx + 1}. 🎯 **${g.name}**\n   • Saved: **UGX ${current.toLocaleString()}** of UGX ${target.toLocaleString()} (${pct}% achieved)\n   • Remaining: UGX ${remaining.toLocaleString()} to goal\n   • Security: ${lockStatus}${pendingAlert}`;
+    });
+
+    return `Here is the current status of your savings goals:
+
+${lines.join("\n\n")}
+
+📊 **Total Committed Locked Savings**: UGX ${totalCommittedSavings.toLocaleString()}
+💰 **Available Liquid Spending Cash**: UGX ${totalSpendingCash.toLocaleString()}
+
+Every contribution builds your intentional buffer. Keep going!`;
+  }
+
+  // B. ACCOUNTS, WALLETS, BALANCES, CASH
+  if (
+    query.includes("account") ||
+    query.includes("balance") ||
+    query.includes("cash") ||
+    query.includes("momo") ||
+    query.includes("mtn") ||
+    query.includes("airtel") ||
+    query.includes("bank") ||
+    query.includes("wallet") ||
+    query.includes("how much")
+  ) {
+    if (accounts.length === 0) {
+      return `You have not registered any accounts yet. Add your MTN MoMo, Airtel Money, Bank accounts, or Cash wallet from the Accounts page to start tracking live balances.`;
+    }
+
+    const accLines = accountBalances.map(
+      (a) => `• **${a.name}** (${a.type.toUpperCase()}): **UGX ${a.liveBalance.toLocaleString()}**`
+    );
+
+    return `Here is your live cash & wallet breakdown:
+
+${accLines.join("\n")}
+
+💵 **Total Liquid Spending Cash**: **UGX ${totalSpendingCash.toLocaleString()}**
+🔒 **Committed Locked Savings**: **UGX ${totalCommittedSavings.toLocaleString()}**
+📈 **Overall Net Worth**: **UGX ${(totalSpendingCash + totalCommittedSavings).toLocaleString()}**`;
+  }
+
+  // C. BUDGETS & SPENDING
+  if (
+    query.includes("budget") ||
+    query.includes("spend") ||
+    query.includes("limit") ||
+    query.includes("category") ||
+    query.includes("expense") ||
+    query.includes("food") ||
+    query.includes("dining") ||
+    query.includes("fuel") ||
+    query.includes("rent")
+  ) {
+    if (budgets.length === 0) {
+      return `You haven't set up any category budgets for this month yet. You can create spending guardrails (e.g., Food, Fuel, Rent, Entertainment) in the Budgets section to enable automated threshold alerts and voice warnings!`;
+    }
+
+    const budgetLines = budgets.map((b) => {
+      const catName = catMap.get(b.categoryId) || "Budget";
+      const spent = monthTxs
+        .filter((t) => t.categoryId === b.categoryId)
+        .reduce((sum, t) => sum + Number(t.amount) + Number(t.feeAmount || 0), 0);
+      const limit = Number(b.amount);
+      const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
+      const remaining = Math.max(0, limit - spent);
+      const overspend = Math.max(0, spent - limit);
+
+      const status =
+        pct >= 100
+          ? `🚨 EXCEEDED by UGX ${overspend.toLocaleString()}`
+          : pct >= 80
+          ? `⚠️ 80%+ Burn Rate (UGX ${remaining.toLocaleString()} left)`
+          : `✅ On Track (UGX ${remaining.toLocaleString()} left)`;
+
+      return `• **${catName}**: UGX ${spent.toLocaleString()} spent of UGX ${limit.toLocaleString()} (${pct}%) — ${status}`;
+    });
+
+    const totalSpentThisMonth = monthTxs.reduce(
+      (sum, t) => sum + Number(t.amount) + Number(t.feeAmount || 0),
+      0
+    );
+
+    return `Here is your current monthly budget review:
+
+${budgetLines.join("\n")}
+
+💸 **Total Spent This Month**: UGX ${totalSpentThisMonth.toLocaleString()}
+Stay mindful of categories near the 80% mark to keep your spending velocity healthy!`;
+  }
+
+  // D. DEBTS & OWED
+  if (
+    query.includes("debt") ||
+    query.includes("owe") ||
+    query.includes("owed") ||
+    query.includes("loan") ||
+    query.includes("borrow") ||
+    query.includes("lend")
+  ) {
+    if (debts.length === 0) {
+      return `You have no active loans or borrowed balances recorded in Debts & Owed. All clear!`;
+    }
+
+    const youOwe = debts.filter((d) => d.type === "you_owe");
+    const owedToYou = debts.filter((d) => d.type === "owed_to_you");
+
+    const totalYouOwe = youOwe.reduce((sum, d) => sum + Number(d.remainingAmount), 0);
+    const totalOwedToYou = owedToYou.reduce((sum, d) => sum + Number(d.remainingAmount), 0);
+
+    return `Here is your debt & credit standing:
+
+🔴 **Money You Owe (Liabilities)**: UGX ${totalYouOwe.toLocaleString()} across ${youOwe.length} record${youOwe.length === 1 ? '' : 's'}.
+🟢 **Money Owed To You (Receivables)**: UGX ${totalOwedToYou.toLocaleString()} across ${owedToYou.length} record${owedToYou.length === 1 ? '' : 's'}.
+
+Remember to prioritize high-interest liabilities first to prevent tariff and fee drag.`;
+  }
+
+  // E. VAULTS & SACCOs
+  if (
+    query.includes("vault") ||
+    query.includes("sacco") ||
+    query.includes("group") ||
+    query.includes("family")
+  ) {
+    if (vaults.length === 0) {
+      return `You haven't created or joined any Tereka Vaults yet. Vaults allow you to pool group or family savings with multi-signature destination voting and strict unlock conditions!`;
+    }
+
+    const vLines = vaults.map((v) => {
+      return `• 🏛️ **${v.title}**: UGX ${Number(v.currentAmount).toLocaleString()} pooled of UGX ${Number(v.targetAmount).toLocaleString()} (Lock: ${v.lockType.replace('_', ' ')})`;
+    });
+
+    return `Here are your active Tereka Vaults:
+
+${vLines.join("\n")}
+
+All disbursements require authorized keyholder approvals or member destination voting.`;
+  }
+
+  // F. GENERAL / ADVICE / GREETINGS
+  const name = userProfile[0]?.fullName || "Friend";
+  return `Hello ${name}! Here is a quick snapshot of your financial intelligence:
+
+• 💰 **Available Spending Cash**: UGX ${totalSpendingCash.toLocaleString()}
+• 🎯 **Committed Locked Savings**: UGX ${totalCommittedSavings.toLocaleString()} across ${goals.length} goal${goals.length === 1 ? '' : 's'}
+• 📊 **Active Monthly Budgets**: ${budgets.length} categories tracked
+• ⚖️ **Net Liquid Worth**: UGX ${(totalSpendingCash + totalCommittedSavings).toLocaleString()}
+
+Feel free to ask me anything specific:
+- "What are my savings goals?"
+- "How much money do I have in my accounts?"
+- "Am I over budget in any category?"
+- "Who owes me money or what loans do I have?"`;
+}
+
+/**
  * POST /api/assistant/conversations/:id/messages
  * Sends a message and generates an intelligent financial advisory reply.
  */
@@ -1871,8 +2102,8 @@ router.post("/assistant/conversations/:id/messages", async (req: AuthenticatedRe
       content: body.content,
     });
 
+    const assistantContent = await generateFinancialAdvisorReply(userId, body.content);
     const assistantMsgId = `msg-${randomUUID()}`;
-    const assistantContent = `I analyzed your cash flow and active records. Your debts and account balances in PostgreSQL are in sync. Remember to prioritize high-risk liabilities and set aside reserve funds in your mobile money or savings wallets.`;
 
     await db.insert(aiMessagesTable).values({
       id: assistantMsgId,
