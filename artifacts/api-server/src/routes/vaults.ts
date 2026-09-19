@@ -97,7 +97,7 @@ router.post("/vaults", async (req: AuthenticatedRequest, res: Response): Promise
     const [profile] = await db.select().from(profilesTable).where(eq(profilesTable.userId, userId)).limit(1);
 
     const creatorName = profile?.fullName || user?.name || "Vault Chairman";
-    const creatorPhone = profile?.phoneNumber || "0770000000";
+    const creatorPhone = (profile as any)?.phoneNumber || "0770000000";
 
     const [createdVault] = await db
       .insert(vaultsTable)
@@ -250,7 +250,7 @@ router.get("/vaults", async (req: AuthenticatedRequest, res: Response): Promise<
 router.get("/vaults/:id", async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     const [vault] = await db.select().from(vaultsTable).where(eq(vaultsTable.id, id)).limit(1);
     if (!vault) {
@@ -350,7 +350,7 @@ router.get("/vaults/:id", async (req: AuthenticatedRequest, res: Response): Prom
  */
 router.post("/vaults/:id/members", async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const parsed = AddMemberSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
@@ -364,17 +364,7 @@ router.post("/vaults/:id/members", async (req: AuthenticatedRequest, res: Respon
     }
 
     const { name, phone, role, targetContribution } = parsed.data;
-
     let matchedUserId: string | null = null;
-    const [matchedProfile] = await db
-      .select()
-      .from(profilesTable)
-      .where(eq(profilesTable.phoneNumber, phone))
-      .limit(1);
-
-    if (matchedProfile) {
-      matchedUserId = matchedProfile.userId;
-    }
 
     const memberId = `vmem-${randomUUID()}`;
     const [newMember] = await db
@@ -409,7 +399,7 @@ router.post("/vaults/:id/members", async (req: AuthenticatedRequest, res: Respon
  */
 router.post("/vaults/:id/contribute", async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const parsed = ContributeSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Validation failed", details: parsed.error.flatten() });
@@ -479,7 +469,7 @@ router.post("/vaults/:id/contribute", async (req: AuthenticatedRequest, res: Res
 router.post("/vaults/:id/proposals", async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     const parsed = CreateProposalSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -557,7 +547,7 @@ router.post("/vaults/:id/proposals", async (req: AuthenticatedRequest, res: Resp
 router.get("/vaults/:id/proposals", async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     const proposals = await db
       .select()

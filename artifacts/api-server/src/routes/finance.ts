@@ -1151,7 +1151,7 @@ router.post("/goals", async (req: AuthenticatedRequest, res) => {
 router.patch("/goals/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = String(req.params.id);
     const body = req.body;
 
     const existing = await db
@@ -1209,7 +1209,7 @@ router.patch("/goals/:id", async (req: AuthenticatedRequest, res) => {
 router.delete("/goals/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     await db.delete(financialGoalsTable).where(and(eq(financialGoalsTable.id, id), eq(financialGoalsTable.userId, userId)));
     return res.status(204).send();
@@ -1226,7 +1226,7 @@ router.delete("/goals/:id", async (req: AuthenticatedRequest, res) => {
 router.post("/goals/:id/contribute", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { amount, accountId, note } = req.body;
 
     const numAmount = Math.round(Number(amount));
@@ -1307,8 +1307,8 @@ router.post("/goals/:id/contribute", async (req: AuthenticatedRequest, res) => {
 router.post("/goals/:id/request-withdrawal", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
-    const { amount } = req.body;
+    const id = String(req.params.id);
+    const { amount, destinationAccountId } = req.body;
 
     const numAmount = Math.round(Number(amount));
     if (!numAmount || numAmount <= 0) {
@@ -1394,7 +1394,7 @@ router.post("/goals/:id/request-withdrawal", async (req: AuthenticatedRequest, r
 router.post("/goals/:id/cancel-withdrawal", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = String(req.params.id);
 
     const [goal] = await db
       .select()
@@ -1432,7 +1432,7 @@ router.post("/goals/:id/cancel-withdrawal", async (req: AuthenticatedRequest, re
 router.post("/goals/:id/execute-withdrawal", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { destinationAccountId } = req.body;
 
     if (!destinationAccountId) {
@@ -1866,7 +1866,7 @@ async function generateFinancialAdvisorReply(userId: string, userText: string): 
     db.select().from(budgetsTable).where(eq(budgetsTable.userId, userId)),
     db.select().from(categoriesTable).where(or(eq(categoriesTable.userId, userId), eq(categoriesTable.isDefault, true))),
     db.select().from(debtsTable).where(eq(debtsTable.userId, userId)),
-    db.select().from(vaultsTable).where(eq(vaultsTable.creatorUserId, userId)),
+    db.select().from(vaultsTable).where(eq(vaultsTable.userId, userId)),
     db.select().from(profilesTable).where(eq(profilesTable.userId, userId)).limit(1),
   ]);
 
