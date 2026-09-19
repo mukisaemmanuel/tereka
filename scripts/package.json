@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "inspect-db": "tsx ./src/inspect-db.ts",
+    "reset-db": "tsx ./src/reset-ugx-demo.ts",
     "test-system": "tsx ./src/test-system.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

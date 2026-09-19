@@ -16,7 +16,7 @@ function AuthShell({ eyebrow, title, copy, children }: { eyebrow: string; title:
           <div className="relative z-10 max-w-md">
             <p className="mb-5 font-mono text-[10px] uppercase tracking-[.25em] text-sidebar-primary">A calmer way to be with money</p>
             <p className="font-serif text-5xl leading-[1.1]">Clarity for the life you're building.</p>
-            <p className="mt-6 max-w-sm text-sm leading-7 text-sidebar-foreground/65">Tereka turns the everyday movement of your money into a view you can actually use — tailored for East African mobile money and bank accounts.</p>
+            <p className="mt-6 max-w-sm text-sm leading-7 text-sidebar-foreground/65">Tereka turns the everyday movement of your money into a view you can actually use — tailored for Ugandan mobile money (MTN MoMo, Airtel Money) and bank accounts.</p>
             <div className="mt-10 flex items-center gap-3 text-xs text-sidebar-foreground/60">
               <ShieldCheck size={16} className="text-sidebar-primary" /> Real double-entry security · User isolated spaces
             </div>
