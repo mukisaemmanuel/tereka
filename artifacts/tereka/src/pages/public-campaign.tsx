@@ -104,7 +104,10 @@ export function PublicCampaign({ slug: propSlug }: { slug?: string }) {
   const { data, isLoading, error } = useQuery<PublicCampaignData>({
     queryKey: ['public-campaign', slug],
     queryFn: async () => {
-      const res = await fetch(`/api/public/campaigns/${slug}`);
+      const token = localStorage.getItem('tereka_auth_token');
+      const res = await fetch(`/api/public/campaigns/${slug}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) {
         if (res.status === 404) throw new Error('Campaign not found');
         throw new Error('Failed to load campaign');
