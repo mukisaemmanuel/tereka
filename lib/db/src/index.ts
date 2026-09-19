@@ -10,7 +10,9 @@ const __dirname = path.dirname(__filename);
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
+let activeDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.SUPABASE_DATABASE_URL || process.env.POSTGRES_PRISMA_URL;
+
+if (!activeDbUrl) {
   const rootEnvPath = path.resolve(process.cwd(), ".env");
   const fallbackEnvPath = path.resolve(__dirname, "../../../.env");
   const envPath = fs.existsSync(rootEnvPath) ? rootEnvPath : fs.existsSync(fallbackEnvPath) ? fallbackEnvPath : null;
@@ -27,13 +29,16 @@ if (!process.env.DATABASE_URL) {
       }
     }
   }
+  activeDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.SUPABASE_DATABASE_URL || process.env.POSTGRES_PRISMA_URL;
 }
 
-if (!process.env.DATABASE_URL) {
+if (!activeDbUrl) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "DATABASE_URL (or POSTGRES_URL) must be set. Did you forget to provision a database?",
   );
 }
+
+process.env.DATABASE_URL = activeDbUrl;
 
 const isRemote = process.env.DATABASE_URL.includes("supabase") || process.env.DATABASE_URL.includes("sslmode=require");
 export const pool = new Pool({

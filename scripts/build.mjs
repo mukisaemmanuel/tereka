@@ -5,6 +5,9 @@ import path from "node:path";
 console.log("[Tereka Build] Starting frontend build...");
 execSync("pnpm --filter @workspace/tereka run build", { stdio: "inherit" });
 
+console.log("[Tereka Build] Starting API serverless build...");
+execSync("pnpm --filter @workspace/api-server run build", { stdio: "inherit" });
+
 const srcDir = path.resolve("artifacts/tereka/dist");
 const destDir = path.resolve("dist");
 
