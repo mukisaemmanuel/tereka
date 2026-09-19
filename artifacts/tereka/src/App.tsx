@@ -7,6 +7,7 @@ import NotFound from '@/pages/not-found';
 import { Accounts, Budgets, Dashboard, Goals, Settings, Transactions, Assistant } from '@/pages/finance';
 import { Debts } from '@/pages/debts';
 import { Campaigns } from '@/pages/campaigns';
+import { Vaults } from '@/pages/vaults';
 import { PublicCampaign } from '@/pages/public-campaign';
 import { ForgotPassword, Login, Signup } from '@/pages/auth';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
@@ -83,6 +84,9 @@ function Router() {
         </Route>
         <Route path="/debts">
           <ProtectedRoute component={Debts} />
+        </Route>
+        <Route path="/vaults">
+          <ProtectedRoute component={Vaults} />
         </Route>
         <Route path="/campaigns">
           <ProtectedRoute component={Campaigns} />
