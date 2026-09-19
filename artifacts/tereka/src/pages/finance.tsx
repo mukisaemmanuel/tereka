@@ -112,7 +112,56 @@ function Transactions() {
 function TransactionModal({ initial, accounts, categories, pending, onClose, onSave }: { initial?: Transaction; accounts: Account[]; categories: Category[]; pending: boolean; onClose: () => void; onSave: (form: TransactionForm) => void }) {
   const [form, setForm] = useState<TransactionForm>(initial ? { type: initial.type, amount: String(initial.amount), currency: 'UGX', accountId: initial.accountId, categoryId: initial.categoryId, description: initial.description, notes: initial.notes || '', transactionDate: initial.transactionDate.slice(0, 10) } : blankTx());
   const set = (key: keyof TransactionForm, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
-  return <Modal title={initial ? 'Edit transaction' : 'Add transaction'} onClose={onClose}><form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="space-y-4"><div className="grid grid-cols-2 gap-3"><Field label="Type"><select value={form.type} onChange={(e) => set('type', e.target.value)} className={inputClass} data-testid="select-form-transaction-type"><option value="expense">Expense</option><option value="income">Income</option></select></Field><Field label="Amount (UGX)"><input required type="number" min="1" value={form.amount} onChange={(e) => set('amount', e.target.value)} placeholder="0" className={inputClass} data-testid="input-form-transaction-amount" /></Field></div><Field label="Description"><input required value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="What was this for?" className={inputClass} data-testid="input-form-transaction-description" /></Field><div className="grid grid-cols-2 gap-3"><Field label="Account"><select required value={form.accountId} onChange={(e) => set('accountId', e.target.value)} className={inputClass} data-testid="select-form-transaction-account"><option value="">Choose account</option>{accounts.filter((a) => a.isActive).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></Field><Field label="Category"><select required value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)} className={inputClass} data-testid="select-form-transaction-category"><option value="">Choose category</option>{categories.filter((c) => c.type === form.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field></div><div className="grid grid-cols-2 gap-3"><Field label="Date"><input required type="date" value={form.transactionDate} onChange={(e) => set('transactionDate', e.target.value)} className={inputClass} data-testid="input-form-transaction-date" /></Field><Field label="Notes"><input value={form.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Optional" className={inputClass} data-testid="input-form-transaction-notes" /></Field></div><Button type="submit" className="mt-2 w-full" disabled={pending} data-testid="button-save-transaction">{pending ? 'Saving…' : initial ? 'Save changes' : 'Add transaction'}</Button></form></Modal>;
+  return (
+    <Modal title={initial ? 'Edit transaction' : 'Add transaction'} onClose={onClose}>
+      <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Type">
+            <select value={form.type} onChange={(e) => set('type', e.target.value)} className={inputClass} data-testid="select-form-transaction-type">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </Field>
+          <Field label="Amount (UGX)">
+            <input required type="number" min="1" value={form.amount} onChange={(e) => set('amount', e.target.value)} placeholder="0" className={inputClass} data-testid="input-form-transaction-amount" />
+          </Field>
+        </div>
+        <Field label="Description">
+          <input required value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="What was this for?" className={inputClass} data-testid="input-form-transaction-description" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Account">
+            <select required value={form.accountId} onChange={(e) => set('accountId', e.target.value)} className={inputClass} data-testid="select-form-transaction-account">
+              <option value="">Choose account</option>
+              {accounts.filter((a) => a.isActive).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </Field>
+          <Field label="Category">
+            <select required value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)} className={inputClass} data-testid="select-form-transaction-category">
+              <option value="">Choose category</option>
+              {categories.filter((c) => c.type === form.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Date">
+            <input required type="date" value={form.transactionDate} onChange={(e) => set('transactionDate', e.target.value)} className={inputClass} data-testid="input-form-transaction-date" />
+          </Field>
+          <Field label="Notes">
+            <input value={form.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Optional" className={inputClass} data-testid="input-form-transaction-notes" />
+          </Field>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose} data-testid="button-cancel-transaction">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={pending} data-testid="button-save-transaction">
+            {pending ? 'Saving…' : initial ? 'Save changes' : 'Add transaction'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
 }
 
 function getAccountProviderBadge(account: Account) {
@@ -229,30 +278,281 @@ function Accounts() {
 }
 
 function AccountModal({ initial, pending, onClose, onSave }: { initial?: Account; pending: boolean; onClose: () => void; onSave: (data: any, id?: string) => void }) {
-  const [name, setName] = useState(initial?.name || ''); const [type, setType] = useState(initial?.type || 'bank'); const [opening, setOpening] = useState(String(initial?.openingBalance || ''));
-  return <Modal title={initial ? 'Edit account' : 'Add account'} onClose={onClose}><form onSubmit={(e) => { e.preventDefault(); onSave({ name, type, currency: 'UGX', openingBalance: Number(opening) }, initial?.id); }} className="space-y-4"><Field label="Account name"><input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. MTN MoMo main" className={inputClass} data-testid="input-account-name" /></Field><div className="grid grid-cols-2 gap-3"><Field label="Type"><select value={type} onChange={(e) => setType(e.target.value as typeof type)} className={inputClass} data-testid="select-account-type"><option value="bank">Bank</option><option value="mobile_money">Mobile money</option><option value="cash">Cash</option><option value="savings">Savings</option><option value="other">Other</option></select></Field><Field label="Opening balance (UGX)"><input required type="number" min="0" value={opening} onChange={(e) => setOpening(e.target.value)} className={inputClass} data-testid="input-account-opening" /></Field></div><Button className="w-full" type="submit" disabled={pending} data-testid="button-save-account">{pending ? 'Saving…' : initial ? 'Save changes' : 'Add account'}</Button></form></Modal>;
+  const [name, setName] = useState(initial?.name || '');
+  const [type, setType] = useState(initial?.type || 'bank');
+  const [opening, setOpening] = useState(String(initial?.openingBalance || ''));
+  return (
+    <Modal title={initial ? 'Edit account' : 'Add account'} onClose={onClose}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave({ name, type, currency: 'UGX', openingBalance: Number(opening) }, initial?.id);
+        }}
+        className="space-y-4"
+      >
+        <Field label="Account name">
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. MTN MoMo main" className={inputClass} data-testid="input-account-name" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Type">
+            <select value={type} onChange={(e) => setType(e.target.value as typeof type)} className={inputClass} data-testid="select-account-type">
+              <option value="bank">Bank</option>
+              <option value="mobile_money">Mobile money</option>
+              <option value="cash">Cash</option>
+              <option value="savings">Savings</option>
+              <option value="other">Other</option>
+            </select>
+          </Field>
+          <Field label="Opening balance (UGX)">
+            <input required type="number" min="0" value={opening} onChange={(e) => setOpening(e.target.value)} className={inputClass} data-testid="input-account-opening" />
+          </Field>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose} data-testid="button-cancel-account">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={pending} data-testid="button-save-account">
+            {pending ? 'Saving…' : initial ? 'Save changes' : 'Add account'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
 }
 
 function Budgets() {
-  const qc = useQueryClient(); const query = useGetBudgets(); const categories = useGetCategories({ type: 'expense' }); const createCategory = useCreateCategory(); const [modal, setModal] = useState<'add' | Budget | null>(null); const [categoryModal, setCategoryModal] = useState(false); const create = useCreateBudget(); const update = useUpdateBudget(); const remove = useDeleteBudget(); const budgets = query.data || [];
-  const save = (data: any, id?: string) => { const onSuccess = () => { qc.invalidateQueries({ queryKey: getGetBudgetsQueryKey() }); setModal(null); }; if (id) update.mutate({ id, data }, { onSuccess }); else create.mutate({ data }, { onSuccess }); };
-  return <AppShell><PageHeading eyebrow="Spend with intention" title="Budgets" description="A gentle guardrail for the things that matter this month." action={<Button onClick={() => setModal('add')} data-testid="button-add-budget"><Plus size={16} /> New budget</Button>} />{query.isLoading ? <div className="grid gap-4 sm:grid-cols-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-48" />)}</div> : query.isError ? <ErrorState retry={() => query.refetch()} /> : budgets.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{budgets.map((budget, i) => <Card key={budget.id} className="p-5"><div className="flex items-start justify-between"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-secondary text-primary">{['⌁', '⌂', '→', '•'][i % 4]}</span><div><p className="text-sm font-bold">{budget.categoryName}</p><p className="mt-0.5 text-xs capitalize text-muted-foreground">{budget.period} plan</p></div></div><div className="flex gap-1"><button onClick={() => setModal(budget)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-primary" data-testid={`button-edit-budget-${budget.id}`}><Edit3 size={15} /></button><button onClick={() => { if (window.confirm('Delete this budget?')) remove.mutate({ id: budget.id }, { onSuccess: () => qc.invalidateQueries({ queryKey: getGetBudgetsQueryKey() }) }); }} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" data-testid={`button-delete-budget-${budget.id}`}><Trash2 size={15} /></button></div></div><div className="mt-7 flex items-end justify-between"><p className="font-mono text-xl">{money(budget.spent, budget.currency)} <span className="text-xs text-muted-foreground">of {money(budget.amount, budget.currency)}</span></p><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${budget.status === 'exceeded' ? 'bg-destructive/10 text-destructive' : budget.status === 'warning' ? 'bg-accent/25 text-foreground' : 'bg-primary/10 text-primary'}`}>{budget.status.replace('_', ' ')}</span></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"><div className={`h-full rounded-full ${budget.status === 'exceeded' ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${Math.min(100, budget.percentageUsed)}%` }} /></div><p className="mt-2 text-right font-mono text-[10px] text-muted-foreground">{budget.percentageUsed}% used</p></Card>)}</div> : <Card><EmptyState title="A plan for your month" body="Set a budget for one category. It can be a guide, not a restriction." action={<Button onClick={() => setModal('add')} data-testid="button-empty-add-budget"><Plus size={15} /> Create a budget</Button>} /></Card>}<div className="mt-8 flex items-center justify-between border-t border-border pt-5"><div><p className="text-sm font-bold">Need another category?</p><p className="mt-1 text-xs text-muted-foreground">Create a custom label for your real life.</p></div><Button variant="secondary" onClick={() => setCategoryModal(true)} data-testid="button-add-category"><Plus size={15} /> New category</Button></div>{modal && <BudgetModal initial={modal !== 'add' ? modal : undefined} categories={categories.data || []} pending={create.isPending || update.isPending} onClose={() => setModal(null)} onSave={save} />}{categoryModal && <CategoryModal pending={createCategory.isPending} onClose={() => setCategoryModal(false)} onSave={(data) => createCategory.mutate({ data }, { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetCategoriesQueryKey({ type: 'expense' }) }); setCategoryModal(false); } })} />}</AppShell>;
+  const qc = useQueryClient();
+  const query = useGetBudgets();
+  const categories = useGetCategories({ type: 'expense' });
+  const createCategory = useCreateCategory();
+  const [modal, setModal] = useState<'add' | Budget | null>(null);
+  const [categoryModal, setCategoryModal] = useState(false);
+  const create = useCreateBudget();
+  const update = useUpdateBudget();
+  const remove = useDeleteBudget();
+  const budgets = query.data || [];
+  const save = (data: any, id?: string) => {
+    const onSuccess = () => {
+      qc.invalidateQueries({ queryKey: getGetBudgetsQueryKey() });
+      setModal(null);
+    };
+    if (id) update.mutate({ id, data }, { onSuccess });
+    else create.mutate({ data }, { onSuccess });
+  };
+  return (
+    <AppShell>
+      <PageHeading eyebrow="Spend with intention" title="Budgets" description="A gentle guardrail for the things that matter this month." action={<Button onClick={() => setModal('add')} data-testid="button-add-budget"><Plus size={16} /> New budget</Button>} />
+      {query.isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-48" />)}</div>
+      ) : query.isError ? (
+        <ErrorState retry={() => query.refetch()} />
+      ) : budgets.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {budgets.map((budget, i) => (
+            <Card key={budget.id} className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-secondary text-primary">{['⌁', '⌂', '→', '•'][i % 4]}</span>
+                  <div>
+                    <p className="text-sm font-bold">{budget.categoryName}</p>
+                    <p className="mt-0.5 text-xs capitalize text-muted-foreground">{budget.period} plan</p>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => setModal(budget)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-primary" data-testid={`button-edit-budget-${budget.id}`}><Edit3 size={15} /></button>
+                  <button onClick={() => { if (window.confirm('Delete this budget?')) remove.mutate({ id: budget.id }, { onSuccess: () => qc.invalidateQueries({ queryKey: getGetBudgetsQueryKey() }) }); }} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" data-testid={`button-delete-budget-${budget.id}`}><Trash2 size={15} /></button>
+                </div>
+              </div>
+              <div className="mt-7 flex items-end justify-between">
+                <p className="font-mono text-xl">{money(budget.spent, budget.currency)} <span className="text-xs text-muted-foreground">of {money(budget.amount, budget.currency)}</span></p>
+                <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${budget.status === 'exceeded' ? 'bg-destructive/10 text-destructive' : budget.status === 'warning' ? 'bg-accent/25 text-foreground' : 'bg-primary/10 text-primary'}`}>{budget.status.replace('_', ' ')}</span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
+                <div className={`h-full rounded-full ${budget.status === 'exceeded' ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${Math.min(100, budget.percentageUsed)}%` }} />
+              </div>
+              <p className="mt-2 text-right font-mono text-[10px] text-muted-foreground">{budget.percentageUsed}% used</p>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card><EmptyState title="A plan for your month" body="Set a budget for one category. It can be a guide, not a restriction." action={<Button onClick={() => setModal('add')} data-testid="button-empty-add-budget"><Plus size={15} /> Create a budget</Button>} /></Card>
+      )}
+      <div className="mt-8 flex items-center justify-between border-t border-border pt-5">
+        <div>
+          <p className="text-sm font-bold">Need another category?</p>
+          <p className="mt-1 text-xs text-muted-foreground">Create a custom label for your real life.</p>
+        </div>
+        <Button variant="secondary" onClick={() => setCategoryModal(true)} data-testid="button-add-category"><Plus size={15} /> New category</Button>
+      </div>
+      {modal && <BudgetModal initial={modal !== 'add' ? modal : undefined} categories={categories.data || []} pending={create.isPending || update.isPending} onClose={() => setModal(null)} onSave={save} />}
+      {categoryModal && <CategoryModal pending={createCategory.isPending} onClose={() => setCategoryModal(false)} onSave={(data) => createCategory.mutate({ data }, { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetCategoriesQueryKey({ type: 'expense' }) }); setCategoryModal(false); } })} />}
+    </AppShell>
+  );
 }
 
 function BudgetModal({ initial, categories, pending, onClose, onSave }: { initial?: Budget; categories: Category[]; pending: boolean; onClose: () => void; onSave: (data: any, id?: string) => void }) {
-  const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id || ''); const [amount, setAmount] = useState(String(initial?.amount || ''));
-  return <Modal title={initial ? 'Edit budget' : 'New monthly budget'} onClose={onClose}><form onSubmit={(e) => { e.preventDefault(); onSave({ categoryId, amount: Number(amount), currency: 'UGX', period: 'monthly' }, initial?.id); }} className="space-y-4"><Field label="Category"><select required value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass} data-testid="select-budget-category">{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field><Field label="Monthly amount (UGX)"><input required type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} data-testid="input-budget-amount" /></Field><Button className="w-full" type="submit" disabled={pending} data-testid="button-save-budget">{pending ? 'Saving…' : initial ? 'Save changes' : 'Create budget'}</Button></form></Modal>;
+  const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id || '');
+  const [amount, setAmount] = useState(String(initial?.amount || ''));
+  return (
+    <Modal title={initial ? 'Edit budget' : 'New monthly budget'} onClose={onClose}>
+      <form onSubmit={(e) => { e.preventDefault(); onSave({ categoryId, amount: Number(amount), currency: 'UGX', period: 'monthly' }, initial?.id); }} className="space-y-4">
+        <Field label="Category">
+          <select required value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={inputClass} data-testid="select-budget-category">
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Monthly amount (UGX)">
+          <input required type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} className={inputClass} data-testid="input-budget-amount" />
+        </Field>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose} data-testid="button-cancel-budget">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={pending} data-testid="button-save-budget">
+            {pending ? 'Saving…' : initial ? 'Save changes' : 'Create budget'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
 }
 
-function CategoryModal({ pending, onClose, onSave }: { pending: boolean; onClose: () => void; onSave: (data: any) => void }) { const [name, setName] = useState(''); return <Modal title="New category" onClose={onClose}><form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave({ name, type: 'expense', icon: 'circle' }); }}><Field label="Category name"><input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Family support" className={inputClass} data-testid="input-category-name" /></Field><Button className="w-full" type="submit" disabled={pending} data-testid="button-save-category">{pending ? 'Creating…' : 'Create category'}</Button></form></Modal>; }
+function CategoryModal({ pending, onClose, onSave }: { pending: boolean; onClose: () => void; onSave: (data: any) => void }) {
+  const [name, setName] = useState('');
+  return (
+    <Modal title="New category" onClose={onClose}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave({ name, type: 'expense', icon: 'circle' }); }}>
+        <Field label="Category name">
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Family support" className={inputClass} data-testid="input-category-name" />
+        </Field>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose} data-testid="button-cancel-category">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={pending} data-testid="button-save-category">
+            {pending ? 'Creating…' : 'Create category'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 function Goals() {
-  const qc = useQueryClient(); const query = useGetGoals(); const [modal, setModal] = useState<'add' | FinancialGoal | null>(null); const create = useCreateGoal(); const update = useUpdateGoal(); const remove = useDeleteGoal(); const goals = query.data || [];
-  const save = (data: any, id?: string) => { const onSuccess = () => { qc.invalidateQueries({ queryKey: getGetGoalsQueryKey() }); setModal(null); }; if (id) update.mutate({ id, data }, { onSuccess }); else create.mutate({ data }, { onSuccess }); };
-  return <AppShell><PageHeading eyebrow="Forward motion" title="Goals" description="The things your money is making possible — one contribution at a time." action={<Button onClick={() => setModal('add')} data-testid="button-add-goal"><Plus size={16} /> New goal</Button>} />{query.isLoading ? <div className="grid gap-4 sm:grid-cols-2">{[1, 2].map((i) => <Skeleton key={i} className="h-52" />)}</div> : query.isError ? <ErrorState retry={() => query.refetch()} /> : goals.length ? <div className="grid gap-4 lg:grid-cols-2">{goals.map((goal) => <Card key={goal.id} className="p-5 sm:p-6"><div className="flex items-start justify-between"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-accent/25 text-primary"><Target size={20} /></span><div><h2 className="font-serif text-xl">{goal.name}</h2><p className="mt-1 text-xs text-muted-foreground">Target {dateLabel(goal.targetDate, true)}</p></div></div><div className="flex gap-1"><button onClick={() => setModal(goal)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-primary" data-testid={`button-edit-goal-${goal.id}`}><Edit3 size={15} /></button><button onClick={() => { if (window.confirm('Delete this goal?')) remove.mutate({ id: goal.id }, { onSuccess: () => qc.invalidateQueries({ queryKey: getGetGoalsQueryKey() }) }); }} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" data-testid={`button-delete-goal-${goal.id}`}><Trash2 size={15} /></button></div></div><div className="mt-7 flex items-end justify-between"><div><p className="font-mono text-2xl">{money(goal.currentAmount, goal.currency)}</p><p className="mt-1 text-xs text-muted-foreground">of {money(goal.targetAmount, goal.currency)}</p></div><p className="font-mono text-xl text-primary">{goal.percentageComplete}%</p></div><div className="mt-4 h-3 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, goal.percentageComplete)}%` }} /></div><div className="mt-3 flex justify-between text-xs text-muted-foreground"><span>{goal.status}</span><span>{money(goal.remainingAmount, goal.currency)} to go</span></div></Card>)}</div> : <Card><EmptyState title="Give a goal a number" body="A named destination makes progress easier to feel." action={<Button onClick={() => setModal('add')} data-testid="button-empty-add-goal"><Plus size={15} /> Set a goal</Button>} /></Card>}{modal && <GoalModal initial={modal !== 'add' ? modal : undefined} pending={create.isPending || update.isPending} onClose={() => setModal(null)} onSave={save} />}</AppShell>;
+  const qc = useQueryClient();
+  const query = useGetGoals();
+  const [modal, setModal] = useState<'add' | FinancialGoal | null>(null);
+  const create = useCreateGoal();
+  const update = useUpdateGoal();
+  const remove = useDeleteGoal();
+  const goals = query.data || [];
+  const save = (data: any, id?: string) => {
+    const onSuccess = () => {
+      qc.invalidateQueries({ queryKey: getGetGoalsQueryKey() });
+      setModal(null);
+    };
+    if (id) update.mutate({ id, data }, { onSuccess });
+    else create.mutate({ data }, { onSuccess });
+  };
+  return (
+    <AppShell>
+      <PageHeading eyebrow="Forward motion" title="Goals" description="The things your money is making possible — one contribution at a time." action={<Button onClick={() => setModal('add')} data-testid="button-add-goal"><Plus size={16} /> New goal</Button>} />
+      {query.isLoading ? (
+        <div className="grid gap-4 sm:grid-cols-2">{[1, 2].map((i) => <Skeleton key={i} className="h-52" />)}</div>
+      ) : query.isError ? (
+        <ErrorState retry={() => query.refetch()} />
+      ) : goals.length ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {goals.map((goal) => (
+            <Card key={goal.id} className="p-5 sm:p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-accent/25 text-primary"><Target size={20} /></span>
+                  <div>
+                    <h2 className="font-serif text-xl">{goal.name}</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">Target {dateLabel(goal.targetDate, true)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => setModal(goal)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-primary" data-testid={`button-edit-goal-${goal.id}`}><Edit3 size={15} /></button>
+                  <button onClick={() => { if (window.confirm('Delete this goal?')) remove.mutate({ id: goal.id }, { onSuccess: () => qc.invalidateQueries({ queryKey: getGetGoalsQueryKey() }) }); }} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" data-testid={`button-delete-goal-${goal.id}`}><Trash2 size={15} /></button>
+                </div>
+              </div>
+              <div className="mt-7 flex items-end justify-between">
+                <div>
+                  <p className="font-mono text-2xl">{money(goal.currentAmount, goal.currency)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">of {money(goal.targetAmount, goal.currency)}</p>
+                </div>
+                <p className="font-mono text-xl text-primary">{goal.percentageComplete}%</p>
+              </div>
+              <div className="mt-4 h-3 overflow-hidden rounded-full bg-secondary">
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, goal.percentageComplete)}%` }} />
+              </div>
+              <div className="mt-3 flex justify-between text-xs text-muted-foreground">
+                <span>{goal.status}</span>
+                <span>{money(goal.remainingAmount, goal.currency)} to go</span>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card><EmptyState title="Give a goal a number" body="A named destination makes progress easier to feel." action={<Button onClick={() => setModal('add')} data-testid="button-empty-add-goal"><Plus size={15} /> Set a goal</Button>} /></Card>
+      )}
+      {modal && <GoalModal initial={modal !== 'add' ? modal : undefined} pending={create.isPending || update.isPending} onClose={() => setModal(null)} onSave={save} />}
+    </AppShell>
+  );
 }
 
-function GoalModal({ initial, pending, onClose, onSave }: { initial?: FinancialGoal; pending: boolean; onClose: () => void; onSave: (data: any, id?: string) => void }) { const [name, setName] = useState(initial?.name || ''); const [target, setTarget] = useState(String(initial?.targetAmount || '')); const [current, setCurrent] = useState(String(initial?.currentAmount || '')); const [date, setDate] = useState(initial?.targetDate?.slice(0, 10) || ''); const [status, setStatus] = useState(initial?.status || 'active'); return <Modal title={initial ? 'Edit goal' : 'New savings goal'} onClose={onClose}><form className="space-y-4" onSubmit={(e) => { e.preventDefault(); onSave({ name, targetAmount: Number(target), currentAmount: Number(current), currency: 'UGX', targetDate: date, status }, initial?.id); }}><Field label="What are you building toward?"><input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. A home down payment" className={inputClass} data-testid="input-goal-name" /></Field><div className="grid grid-cols-2 gap-3"><Field label="Target amount (UGX)"><input required type="number" min="1" value={target} onChange={(e) => setTarget(e.target.value)} className={inputClass} data-testid="input-goal-target" /></Field><Field label="Already saved (UGX)"><input required type="number" min="0" value={current} onChange={(e) => setCurrent(e.target.value)} className={inputClass} data-testid="input-goal-current" /></Field></div><div className="grid grid-cols-2 gap-3"><Field label="Target date"><input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} data-testid="input-goal-date" /></Field><Field label="Status"><select value={status} onChange={(e) => setStatus(e.target.value as any)} className={inputClass} data-testid="select-goal-status"><option value="active">Active</option><option value="paused">Paused</option><option value="completed">Completed</option></select></Field></div><Button className="w-full" type="submit" disabled={pending} data-testid="button-save-goal">{pending ? 'Saving…' : initial ? 'Save changes' : 'Create goal'}</Button></form></Modal>; }
+function GoalModal({ initial, pending, onClose, onSave }: { initial?: FinancialGoal; pending: boolean; onClose: () => void; onSave: (data: any, id?: string) => void }) {
+  const [name, setName] = useState(initial?.name || '');
+  const [target, setTarget] = useState(String(initial?.targetAmount || ''));
+  const [current, setCurrent] = useState(String(initial?.currentAmount || ''));
+  const [date, setDate] = useState(initial?.targetDate?.slice(0, 10) || '');
+  const [status, setStatus] = useState(initial?.status || 'active');
+  return (
+    <Modal title={initial ? 'Edit goal' : 'New savings goal'} onClose={onClose}>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave({ name, targetAmount: Number(target), currentAmount: Number(current), currency: 'UGX', targetDate: date, status }, initial?.id);
+        }}
+      >
+        <Field label="What are you building toward?">
+          <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. A home down payment" className={inputClass} data-testid="input-goal-name" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Target amount (UGX)">
+            <input required type="number" min="1" value={target} onChange={(e) => setTarget(e.target.value)} className={inputClass} data-testid="input-goal-target" />
+          </Field>
+          <Field label="Already saved (UGX)">
+            <input required type="number" min="0" value={current} onChange={(e) => setCurrent(e.target.value)} className={inputClass} data-testid="input-goal-current" />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Target date">
+            <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} data-testid="input-goal-date" />
+          </Field>
+          <Field label="Status">
+            <select value={status} onChange={(e) => setStatus(e.target.value as any)} className={inputClass} data-testid="select-goal-status">
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="completed">Completed</option>
+            </select>
+          </Field>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={onClose} data-testid="button-cancel-goal">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={pending} data-testid="button-save-goal">
+            {pending ? 'Saving…' : initial ? 'Save changes' : 'Create goal'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 export function Assistant() {
   const qc = useQueryClient(); const conversationsQuery = useGetConversations(); const [conversationId, setConversationId] = useState(''); const [draft, setDraft] = useState('');

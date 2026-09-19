@@ -112,7 +112,49 @@ export function EmptyState({ title, body, action }: { title: string; body: strin
 }
 
 export function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
-  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/30 p-0 backdrop-blur-sm sm:items-center sm:p-5"><div className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-border bg-card p-6 shadow-2xl sm:rounded-3xl"><div className="mb-6 flex items-center justify-between"><h2 className="font-serif text-2xl">{title}</h2><button onClick={onClose} className="rounded-full p-2 text-muted-foreground hover:bg-secondary" data-testid="button-close-modal"><X size={18} /></button></div>{children}</div></div>;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-5"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      role="dialog"
+      aria-modal="true"
+      data-testid="modal-backdrop"
+    >
+      <div className="relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-border bg-card p-6 shadow-2xl sm:rounded-3xl">
+        <div className="mb-6 flex items-center justify-between border-b border-border/60 pb-4">
+          <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close dialog"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border/80 bg-secondary/80 text-foreground transition-all hover:bg-destructive/15 hover:text-destructive hover:border-destructive/30"
+            data-testid="button-close-modal"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {

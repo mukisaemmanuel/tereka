@@ -665,14 +665,23 @@ function AddDebtModal({
           />
         </Field>
 
-        <Button
-          type="submit"
-          className="mt-2 w-full"
-          disabled={createDebt.isPending}
-          data-testid="button-save-debt"
-        >
-          {createDebt.isPending ? 'Saving to ledger…' : 'Save Debt Record'}
-        </Button>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            data-testid="button-cancel-debt"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={createDebt.isPending}
+            data-testid="button-save-debt"
+          >
+            {createDebt.isPending ? 'Saving to ledger…' : 'Save Debt Record'}
+          </Button>
+        </div>
       </form>
     </Modal>
   );
@@ -827,14 +836,23 @@ function RepaymentModal({
           </Field>
         </div>
 
-        <Button
-          type="submit"
-          className="mt-2 w-full"
-          disabled={payDebt.isPending}
-          data-testid="button-submit-repayment"
-        >
-          {payDebt.isPending ? 'Processing repayment…' : 'Confirm Repayment'}
-        </Button>
+        <div className="mt-4 flex items-center justify-end gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            data-testid="button-cancel-repayment"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={payDebt.isPending}
+            data-testid="button-submit-repayment"
+          >
+            {payDebt.isPending ? 'Processing repayment…' : 'Confirm Repayment'}
+          </Button>
+        </div>
       </form>
     </Modal>
   );
