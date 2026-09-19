@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'wouter';
 import { getGetProfileQueryKey, useGetProfile, useUpdateProfile } from '@workspace/api-client-react';
@@ -112,7 +113,10 @@ export function EmptyState({ title, body, action }: { title: string; body: strin
 }
 
 export function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -126,9 +130,11 @@ export function Modal({ title, children, onClose }: { title: string; children: R
     };
   }, [onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/65 p-4 pt-16 pb-8 backdrop-blur-md sm:p-6 sm:pt-20"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm sm:p-6"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -138,8 +144,8 @@ export function Modal({ title, children, onClose }: { title: string; children: R
       aria-modal="true"
       data-testid="modal-backdrop"
     >
-      <div className="relative my-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-card p-6 shadow-2xl sm:p-7">
-        <div className="mb-6 flex items-center justify-between border-b border-border/70 pb-4">
+      <div className="relative flex max-h-[90dvh] w-full max-w-lg flex-col rounded-3xl border border-border bg-card shadow-2xl animate-in fade-in-50 zoom-in-95 duration-200">
+        <div className="flex shrink-0 items-center justify-between border-b border-border/80 px-6 py-5">
           <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground">{title}</h2>
           <button
             type="button"
@@ -151,9 +157,12 @@ export function Modal({ title, children, onClose }: { title: string; children: R
             <X size={18} />
           </button>
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {children}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
