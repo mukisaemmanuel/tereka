@@ -959,23 +959,52 @@ router.delete("/budgets/:id", async (req: AuthenticatedRequest, res) => {
 });
 
 // ==============================================================================
-// 6. FINANCIAL GOALS
+// 6. FINANCIAL GOALS (WITH INTENTIONAL FRICTION & COOLING-OFF LOCK)
 // ==============================================================================
 
 /**
  * GET /api/goals
- * Lists financial goals with percentage progress.
+ * Lists financial goals with percentage progress, anti-impulse lock status,
+ * cooling-off timer breakdowns, and top spending/saving cash summaries.
  */
 router.get("/goals", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const goals = await db.select().from(financialGoalsTable).where(eq(financialGoalsTable.userId, userId));
+    const [goals, accounts] = await Promise.all([
+      db.select().from(financialGoalsTable).where(eq(financialGoalsTable.userId, userId)).orderBy(desc(financialGoalsTable.createdAt)),
+      db.select().from(accountsTable).where(and(eq(accountsTable.userId, userId), eq(accountsTable.isActive, true))),
+    ]);
+
+    // Compute live available spending cash across accounts
+    const accountBalances = await Promise.all(
+      accounts.map(async (acc) => computeAccountBalance(userId, acc.id, Number(acc.openingBalance)))
+    );
+    const availableSpendingCash = accountBalances.reduce((sum, b) => sum + b, 0);
+
+    const now = Date.now();
 
     const result = goals.map((g) => {
       const targetAmount = Number(g.targetAmount);
       const currentAmount = Number(g.currentAmount);
       const percentageComplete = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 1000) / 10) : 0;
       const remainingAmount = Math.max(0, targetAmount - currentAmount);
+
+      const pendingWithdrawalAmount = g.pendingWithdrawalAmount ? Number(g.pendingWithdrawalAmount) : null;
+      const pendingWithdrawalAt = g.pendingWithdrawalAt ? new Date(g.pendingWithdrawalAt).toISOString() : null;
+      const cooldownHours = g.cooldownHours ?? 24;
+
+      let unlockAt: string | null = null;
+      let remainingCooldownSeconds = 0;
+      let isCooldownActive = false;
+      let canExecuteWithdrawal = false;
+
+      if (pendingWithdrawalAmount && g.pendingWithdrawalAt) {
+        const unlockMs = new Date(g.pendingWithdrawalAt).getTime() + cooldownHours * 3600 * 1000;
+        unlockAt = new Date(unlockMs).toISOString();
+        remainingCooldownSeconds = Math.max(0, Math.floor((unlockMs - now) / 1000));
+        isCooldownActive = remainingCooldownSeconds > 0;
+        canExecuteWithdrawal = remainingCooldownSeconds === 0;
+      }
 
       return {
         id: g.id,
@@ -987,10 +1016,27 @@ router.get("/goals", async (req: AuthenticatedRequest, res) => {
         status: g.status as "active" | "completed" | "paused",
         percentageComplete,
         remainingAmount,
+        isLocked: g.isLocked ?? true,
+        cooldownHours,
+        pendingWithdrawalAmount,
+        pendingWithdrawalAt,
+        unlockAt,
+        remainingCooldownSeconds,
+        remainingCooldownHours: Math.round((remainingCooldownSeconds / 3600) * 10) / 10,
+        isCooldownActive,
+        canExecuteWithdrawal,
+        accountabilityPhone: g.accountabilityPhone || null,
       };
     });
 
-    return res.json(result);
+    const committedLockedSavings = result.reduce((sum, g) => sum + g.currentAmount, 0);
+
+    return res.json({
+      goals: result,
+      availableSpendingCash,
+      committedLockedSavings,
+      totalGoalsCount: result.length,
+    });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to fetch goals" });
   }
@@ -998,28 +1044,39 @@ router.get("/goals", async (req: AuthenticatedRequest, res) => {
 
 /**
  * POST /api/goals
- * Creates a financial goal.
+ * Creates a financial goal with cooling-off lock settings.
  */
 router.post("/goals", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const body = CreateGoalBody.parse(req.body);
+    const body = req.body;
+    if (!body.name || !body.targetAmount) {
+      return res.status(400).json({ error: "Goal name and target amount are required" });
+    }
+
     const id = `goal-${randomUUID()}`;
-    const targetDate = calendarDate(body.targetDate) as string;
+    const targetDate = body.targetDate ? (calendarDate(body.targetDate) as string) : new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10);
+
+    const isLocked = body.isLocked !== undefined ? Boolean(body.isLocked) : true;
+    const cooldownHours = body.cooldownHours ? Number(body.cooldownHours) : 24;
+    const accountabilityPhone = body.accountabilityPhone ? String(body.accountabilityPhone).trim() : null;
 
     await db.insert(financialGoalsTable).values({
       id,
       userId,
       name: body.name,
       targetAmount: String(body.targetAmount),
-      currentAmount: String(body.currentAmount),
-      currency: body.currency,
+      currentAmount: String(body.currentAmount || 0),
+      currency: body.currency || "UGX",
       targetDate,
-      status: body.status,
+      status: body.status || "active",
+      isLocked,
+      cooldownHours,
+      accountabilityPhone,
     });
 
     const targetAmount = Number(body.targetAmount);
-    const currentAmount = Number(body.currentAmount);
+    const currentAmount = Number(body.currentAmount || 0);
     const percentageComplete = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 1000) / 10) : 0;
     const remainingAmount = Math.max(0, targetAmount - currentAmount);
 
@@ -1028,11 +1085,14 @@ router.post("/goals", async (req: AuthenticatedRequest, res) => {
       name: body.name,
       targetAmount,
       currentAmount,
-      currency: body.currency,
+      currency: body.currency || "UGX",
       targetDate,
-      status: body.status,
+      status: body.status || "active",
       percentageComplete,
       remainingAmount,
+      isLocked,
+      cooldownHours,
+      accountabilityPhone,
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to create goal" });
@@ -1041,18 +1101,18 @@ router.post("/goals", async (req: AuthenticatedRequest, res) => {
 
 /**
  * PATCH /api/goals/:id
- * Updates goal progress or status.
+ * Updates goal progress, anti-impulse lock settings, or target.
  */
 router.patch("/goals/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const params = UpdateGoalParams.parse(req.params);
-    const body = UpdateGoalBody.parse(req.body);
+    const { id } = req.params;
+    const body = req.body;
 
     const existing = await db
       .select()
       .from(financialGoalsTable)
-      .where(and(eq(financialGoalsTable.id, params.id), eq(financialGoalsTable.userId, userId)))
+      .where(and(eq(financialGoalsTable.id, id), eq(financialGoalsTable.userId, userId)))
       .limit(1);
 
     if (existing.length === 0) return notFound(res);
@@ -1064,10 +1124,13 @@ router.patch("/goals/:id", async (req: AuthenticatedRequest, res) => {
     if (body.currency) updates.currency = body.currency;
     if (body.status) updates.status = body.status;
     if (body.targetDate) updates.targetDate = calendarDate(body.targetDate) as string;
+    if (body.isLocked !== undefined) updates.isLocked = Boolean(body.isLocked);
+    if (body.cooldownHours !== undefined) updates.cooldownHours = Number(body.cooldownHours);
+    if (body.accountabilityPhone !== undefined) updates.accountabilityPhone = body.accountabilityPhone || null;
 
-    await db.update(financialGoalsTable).set(updates).where(eq(financialGoalsTable.id, params.id));
+    await db.update(financialGoalsTable).set(updates).where(eq(financialGoalsTable.id, id));
 
-    const updated = await db.select().from(financialGoalsTable).where(eq(financialGoalsTable.id, params.id)).limit(1);
+    const updated = await db.select().from(financialGoalsTable).where(eq(financialGoalsTable.id, id)).limit(1);
     const g = updated[0];
 
     const targetAmount = Number(g.targetAmount);
@@ -1085,6 +1148,9 @@ router.patch("/goals/:id", async (req: AuthenticatedRequest, res) => {
       status: g.status,
       percentageComplete,
       remainingAmount,
+      isLocked: g.isLocked,
+      cooldownHours: g.cooldownHours,
+      accountabilityPhone: g.accountabilityPhone,
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to update goal" });
@@ -1098,12 +1164,309 @@ router.patch("/goals/:id", async (req: AuthenticatedRequest, res) => {
 router.delete("/goals/:id", async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.userId!;
-    const params = DeleteGoalParams.parse(req.params);
+    const { id } = req.params;
 
-    await db.delete(financialGoalsTable).where(and(eq(financialGoalsTable.id, params.id), eq(financialGoalsTable.userId, userId)));
+    await db.delete(financialGoalsTable).where(and(eq(financialGoalsTable.id, id), eq(financialGoalsTable.userId, userId)));
     return res.status(204).send();
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to delete goal" });
+  }
+});
+
+/**
+ * POST /api/goals/:id/contribute
+ * Moves money from an account (e.g. MTN MoMo, Cash, Bank) into the goal.
+ * Increments currentAmount and writes balancing double-entry ledger entry.
+ */
+router.post("/goals/:id/contribute", async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.userId!;
+    const { id } = req.params;
+    const { amount, accountId, note } = req.body;
+
+    const numAmount = Math.round(Number(amount));
+    if (!numAmount || numAmount <= 0) {
+      return res.status(400).json({ error: "Contribution amount must be greater than 0" });
+    }
+
+    if (!accountId) {
+      return res.status(400).json({ error: "Source account is required" });
+    }
+
+    // Verify goal
+    const [goal] = await db
+      .select()
+      .from(financialGoalsTable)
+      .where(and(eq(financialGoalsTable.id, id), eq(financialGoalsTable.userId, userId)))
+      .limit(1);
+
+    if (!goal) return notFound(res);
+
+    // Verify account and balance
+    const [account] = await db
+      .select()
+      .from(accountsTable)
+      .where(and(eq(accountsTable.id, accountId), eq(accountsTable.userId, userId)))
+      .limit(1);
+
+    if (!account) {
+      return res.status(404).json({ error: "Source account not found" });
+    }
+
+    const currentBalance = await computeAccountBalance(userId, account.id, Number(account.openingBalance));
+    if (currentBalance < numAmount) {
+      return res.status(400).json({
+        error: `Insufficient funds in ${account.name}. Available: UGX ${currentBalance.toLocaleString()}, Requested: UGX ${numAmount.toLocaleString()}`,
+      });
+    }
+
+    // 1. Create debit ledger entry on source account
+    await db.insert(ledgerEntriesTable).values({
+      id: `led-${randomUUID()}`,
+      userId,
+      transactionId: null,
+      accountId: account.id,
+      amount: numAmount,
+      direction: "debit",
+    });
+
+    // 2. Increment goal currentAmount
+    const [updatedGoal] = await db
+      .update(financialGoalsTable)
+      .set({
+        currentAmount: sql`${financialGoalsTable.currentAmount} + ${numAmount}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(financialGoalsTable.id, id))
+      .returning();
+
+    const newAccBalance = await computeAccountBalance(userId, account.id, Number(account.openingBalance));
+
+    return res.status(200).json({
+      message: `Successfully transferred UGX ${numAmount.toLocaleString()} from ${account.name} to ${goal.name}`,
+      goal: updatedGoal,
+      newAccountBalance: newAccBalance,
+    });
+  } catch (err: any) {
+    console.error("Error contributing to goal:", err);
+    return res.status(500).json({ error: err.message || "Failed to record contribution" });
+  }
+});
+
+/**
+ * POST /api/goals/:id/request-withdrawal
+ * Anti-impulse intercept:
+ * If isLocked is true, does NOT transfer funds immediately.
+ * Sets pendingWithdrawalAmount and pendingWithdrawalAt to initiate the cooling-off lock.
+ */
+router.post("/goals/:id/request-withdrawal", async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.userId!;
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    const numAmount = Math.round(Number(amount));
+    if (!numAmount || numAmount <= 0) {
+      return res.status(400).json({ error: "Withdrawal amount must be greater than 0" });
+    }
+
+    const [goal] = await db
+      .select()
+      .from(financialGoalsTable)
+      .where(and(eq(financialGoalsTable.id, id), eq(financialGoalsTable.userId, userId)))
+      .limit(1);
+
+    if (!goal) return notFound(res);
+
+    if (numAmount > Number(goal.currentAmount)) {
+      return res.status(400).json({
+        error: `Requested amount (UGX ${numAmount.toLocaleString()}) exceeds goal balance (UGX ${Number(goal.currentAmount).toLocaleString()})`,
+      });
+    }
+
+    if (goal.isLocked) {
+      // Initiate cooling-off period
+      const now = new Date();
+      const cooldownHours = goal.cooldownHours || 24;
+      const unlockAt = new Date(now.getTime() + cooldownHours * 3600 * 1000);
+
+      const [updated] = await db
+        .update(financialGoalsTable)
+        .set({
+          pendingWithdrawalAmount: String(numAmount),
+          pendingWithdrawalAt: now,
+          updatedAt: now,
+        })
+        .where(eq(financialGoalsTable.id, id))
+        .returning();
+
+      return res.json({
+        status: "cooldown_active",
+        message: `Cooling-off period initiated. Funds will unlock in ${cooldownHours} hours on ${unlockAt.toLocaleTimeString()} (${unlockAt.toDateString()}). You can cancel anytime.`,
+        goal: updated,
+        unlockAt: unlockAt.toISOString(),
+        cooldownHours,
+      });
+    } else {
+      // Unlocked goal: allow direct withdrawal if destination specified
+      const { destinationAccountId } = req.body;
+      if (!destinationAccountId) {
+        return res.status(400).json({ error: "Destination account is required for payout" });
+      }
+
+      await db
+        .update(financialGoalsTable)
+        .set({
+          currentAmount: sql`GREATEST(0, ${financialGoalsTable.currentAmount} - ${numAmount})`,
+          updatedAt: new Date(),
+        })
+        .where(eq(financialGoalsTable.id, id));
+
+      await db.insert(ledgerEntriesTable).values({
+        id: `led-${randomUUID()}`,
+        userId,
+        transactionId: null,
+        accountId: destinationAccountId,
+        amount: numAmount,
+        direction: "credit",
+      });
+
+      return res.json({
+        status: "completed",
+        message: `UGX ${numAmount.toLocaleString()} disbursed directly to your account.`,
+      });
+    }
+  } catch (err: any) {
+    console.error("Error requesting withdrawal:", err);
+    return res.status(500).json({ error: err.message || "Failed to request withdrawal" });
+  }
+});
+
+/**
+ * POST /api/goals/:id/cancel-withdrawal
+ * Clears pending withdrawal fields, allowing the user to change their mind and keep saving.
+ */
+router.post("/goals/:id/cancel-withdrawal", async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.userId!;
+    const { id } = req.params;
+
+    const [goal] = await db
+      .select()
+      .from(financialGoalsTable)
+      .where(and(eq(financialGoalsTable.id, id), eq(financialGoalsTable.userId, userId)))
+      .limit(1);
+
+    if (!goal) return notFound(res);
+
+    const [updated] = await db
+      .update(financialGoalsTable)
+      .set({
+        pendingWithdrawalAmount: null,
+        pendingWithdrawalAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(financialGoalsTable.id, id))
+      .returning();
+
+    return res.json({
+      message: "Withdrawal cancelled. Your committed savings remain safely locked and on track!",
+      goal: updated,
+    });
+  } catch (err: any) {
+    console.error("Error cancelling withdrawal:", err);
+    return res.status(500).json({ error: err.message || "Failed to cancel withdrawal" });
+  }
+});
+
+/**
+ * POST /api/goals/:id/execute-withdrawal
+ * Checks if cooling-off timer has elapsed.
+ * Only then decrements currentAmount, credits destination account, and writes balancing ledger entry.
+ */
+router.post("/goals/:id/execute-withdrawal", async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = req.userId!;
+    const { id } = req.params;
+    const { destinationAccountId } = req.body;
+
+    if (!destinationAccountId) {
+      return res.status(400).json({ error: "Destination account is required to receive funds" });
+    }
+
+    const [goal] = await db
+      .select()
+      .from(financialGoalsTable)
+      .where(and(eq(financialGoalsTable.id, id), eq(financialGoalsTable.userId, userId)))
+      .limit(1);
+
+    if (!goal) return notFound(res);
+
+    if (!goal.pendingWithdrawalAmount || !goal.pendingWithdrawalAt) {
+      return res.status(400).json({ error: "No pending withdrawal request found for this goal" });
+    }
+
+    const pendingAmount = Number(goal.pendingWithdrawalAmount);
+    const cooldownHours = goal.cooldownHours || 24;
+    const unlockTime = new Date(goal.pendingWithdrawalAt).getTime() + cooldownHours * 3600 * 1000;
+    const now = Date.now();
+
+    if (now < unlockTime) {
+      const remainingSeconds = Math.ceil((unlockTime - now) / 1000);
+      const remainingHours = Math.round((remainingSeconds / 3600) * 10) / 10;
+      return res.status(400).json({
+        error: `Cooling-off timer is still active. Please wait ${remainingHours} hours before funds can be disbursed.`,
+        remainingCooldownSeconds: remainingSeconds,
+      });
+    }
+
+    // Verify destination account
+    const [destinationAccount] = await db
+      .select()
+      .from(accountsTable)
+      .where(and(eq(accountsTable.id, destinationAccountId), eq(accountsTable.userId, userId)))
+      .limit(1);
+
+    if (!destinationAccount) {
+      return res.status(404).json({ error: "Destination account not found" });
+    }
+
+    // 1. Decrement goal currentAmount and clear pending withdrawal
+    const [updatedGoal] = await db
+      .update(financialGoalsTable)
+      .set({
+        currentAmount: sql`GREATEST(0, ${financialGoalsTable.currentAmount} - ${pendingAmount})`,
+        pendingWithdrawalAmount: null,
+        pendingWithdrawalAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(financialGoalsTable.id, id))
+      .returning();
+
+    // 2. Credit destination account
+    await db.insert(ledgerEntriesTable).values({
+      id: `led-${randomUUID()}`,
+      userId,
+      transactionId: null,
+      accountId: destinationAccount.id,
+      amount: pendingAmount,
+      direction: "credit",
+    });
+
+    const newBalance = await computeAccountBalance(userId, destinationAccount.id, Number(destinationAccount.openingBalance));
+
+    return res.json({
+      message: `Withdrawal of UGX ${pendingAmount.toLocaleString()} successfully executed and deposited into ${destinationAccount.name}.`,
+      goal: updatedGoal,
+      destinationAccount: {
+        id: destinationAccount.id,
+        name: destinationAccount.name,
+        newBalance,
+      },
+    });
+  } catch (err: any) {
+    console.error("Error executing withdrawal:", err);
+    return res.status(500).json({ error: err.message || "Failed to execute withdrawal" });
   }
 });
 

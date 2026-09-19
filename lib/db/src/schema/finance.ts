@@ -183,8 +183,16 @@ export const financialGoalsTable = pgTable("financial_goals", {
   currency: text("currency").notNull().default("UGX"),
   targetDate: date("target_date", { mode: "string" }).notNull(),
   status: text("status").notNull().default("active"), // 'active' | 'completed' | 'paused'
+  // Anti-impulse intentional friction lock fields:
+  isLocked: boolean("is_locked").notNull().default(true),
+  cooldownHours: integer("cooldown_hours").notNull().default(24),
+  pendingWithdrawalAmount: numeric("pending_withdrawal_amount", { precision: 18, scale: 2 }),
+  pendingWithdrawalAt: timestamp("pending_withdrawal_at", { withTimezone: true }),
+  accountabilityPhone: text("accountability_phone"),
   ...timestamps,
 });
+
+export const savingsGoalsTable = financialGoalsTable;
 
 /**
  * ------------------------------------------------------------------------------
