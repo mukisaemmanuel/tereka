@@ -35,6 +35,8 @@ export interface Campaign {
   currency: string;
   deadline: string | null;
   accountId: string | null;
+  recipientPhone?: string | null;
+  recipientName?: string | null;
   imageUrl: string | null;
   status: 'active' | 'completed' | 'paused';
   totalRaised: number;
@@ -110,7 +112,7 @@ export function Campaigns() {
   const campaignsQuery = useQuery<Campaign[]>({
     queryKey: ['campaigns'],
     queryFn: async () => {
-      const token = localStorage.getItem('tereka_token');
+      const token = localStorage.getItem('tereka_auth_token');
       const res = await fetch('/api/campaigns', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -121,7 +123,7 @@ export function Campaigns() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const token = localStorage.getItem('tereka_token');
+      const token = localStorage.getItem('tereka_auth_token');
       const res = await fetch(`/api/campaigns/${id}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -279,8 +281,18 @@ export function Campaigns() {
                     </p>
                   )}
 
+                  {/* Payout Phone Number Notice */}
+                  {campaign.recipientPhone && (
+                    <div className="mt-3 flex items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-300 border border-amber-500/20">
+                      <Wallet size={13} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span className="truncate">
+                        Payout: <strong>{campaign.recipientPhone}</strong> {campaign.recipientName ? `(${campaign.recipientName})` : ''}
+                      </span>
+                    </div>
+                  )}
+
                   {/* Financial Progress */}
-                  <div className="mt-5 space-y-2 border-t border-border/60 pt-4">
+                  <div className="mt-4 space-y-2 border-t border-border/60 pt-4">
                     <div className="flex items-end justify-between">
                       <div>
                         <p className="font-mono text-lg font-bold text-primary">
@@ -409,6 +421,8 @@ function NewCampaignModal({
   const [targetAmount, setTargetAmount] = useState('');
   const [deadline, setDeadline] = useState('');
   const [accountId, setAccountId] = useState(accounts[0]?.id || '');
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [recipientName, setRecipientName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -447,7 +461,7 @@ function NewCampaignModal({
 
     setPending(true);
     try {
-      const token = localStorage.getItem('tereka_token');
+      const token = localStorage.getItem('tereka_auth_token');
       const res = await fetch('/api/campaigns', {
         method: 'POST',
         headers: {
@@ -462,6 +476,8 @@ function NewCampaignModal({
           currency: 'UGX',
           deadline: deadline || undefined,
           accountId: accountId || undefined,
+          recipientPhone: recipientPhone.trim() || undefined,
+          recipientName: recipientName.trim() || undefined,
           imageUrl: imageUrl.trim() || undefined,
         }),
       });
@@ -612,8 +628,43 @@ function NewCampaignModal({
           </Field>
         </div>
 
-        {/* Destination Wallet */}
-        <Field label="Receive Contributions Into Account">
+        {/* Mobile Money Payout Phone Number & Name */}
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3.5 space-y-3">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+            Mobile Money Payout Destination
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Field label="Phone Number To Receive Funds">
+              <input
+                required
+                type="tel"
+                value={recipientPhone}
+                onChange={(e) => setRecipientPhone(e.target.value)}
+                placeholder="e.g. 0772123456 / 0701234567"
+                className={inputClass}
+                data-testid="input-campaign-recipient-phone"
+              />
+            </Field>
+
+            <Field label="Registered Recipient Name">
+              <input
+                required
+                type="text"
+                value={recipientName}
+                onChange={(e) => setRecipientName(e.target.value)}
+                placeholder="e.g. Mukisa Emmanuel"
+                className={inputClass}
+                data-testid="input-campaign-recipient-name"
+              />
+            </Field>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Contributors will see this verified phone number and name when sending money via MTN MoMo or Airtel Money.
+          </p>
+        </div>
+
+        {/* Optional Destination Wallet Link */}
+        <Field label="Optional: Link To App Wallet">
           <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
@@ -665,7 +716,7 @@ function CampaignDetailsModal({
   const contributionsQuery = useQuery<{ contributions: Contribution[] }>({
     queryKey: ['campaign', campaign.id],
     queryFn: async () => {
-      const token = localStorage.getItem('tereka_token');
+      const token = localStorage.getItem('tereka_auth_token');
       const res = await fetch(`/api/campaigns/${campaign.id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

@@ -265,6 +265,8 @@ export const campaignsTable = pgTable("campaigns", {
   currency: text("currency").notNull().default("UGX"),
   deadline: date("deadline", { mode: "string" }),
   accountId: text("account_id"), // Linked wallet/bank for funds (e.g. MTN MoMo, Airtel Money)
+  recipientPhone: text("recipient_phone"), // Dedicated mobile money number for sending contributions (e.g. 0772123456)
+  recipientName: text("recipient_name"), // Registered Mobile Money / Bank name of recipient (e.g. Mukisa Emmanuel)
   imageUrl: text("image_url"), // Event flyer, banner, or image URL
   status: text("status").notNull().default("active"), // 'active' | 'completed' | 'paused'
   ...timestamps,

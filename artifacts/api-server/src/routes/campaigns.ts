@@ -43,6 +43,8 @@ const CreateCampaignSchema = z.object({
   currency: z.string().default("UGX"),
   deadline: z.string().optional(),
   accountId: z.string().optional(),
+  recipientPhone: z.string().optional(),
+  recipientName: z.string().optional(),
   imageUrl: z.string().optional(),
   status: z.enum(["active", "completed", "paused"]).default("active"),
 });
@@ -101,7 +103,7 @@ router.get("/campaigns", requireAuth, async (req: AuthenticatedRequest, res) => 
  * ------------------------------------------------------------------------------
  * POST /api/campaigns
  * ------------------------------------------------------------------------------
- * Creates a new event campaign with flyer image URL / data URL.
+ * Creates a new event campaign with flyer image URL / data URL and payout phone number.
  */
 router.post("/campaigns", requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
@@ -126,6 +128,8 @@ router.post("/campaigns", requireAuth, async (req: AuthenticatedRequest, res) =>
       currency: "UGX",
       deadline: data.deadline || null,
       accountId: data.accountId || null,
+      recipientPhone: data.recipientPhone ? data.recipientPhone.trim() : null,
+      recipientName: data.recipientName ? data.recipientName.trim() : null,
       imageUrl: data.imageUrl || null,
       status: data.status,
     });
@@ -287,6 +291,8 @@ router.get("/public/campaigns/:slug", async (req, res) => {
       targetAmount: campaign.targetAmount,
       currency: campaign.currency,
       deadline: campaign.deadline,
+      recipientPhone: campaign.recipientPhone,
+      recipientName: campaign.recipientName,
       imageUrl: campaign.imageUrl,
       status: campaign.status,
       organizerName,

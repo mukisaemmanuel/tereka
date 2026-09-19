@@ -27,6 +27,8 @@ interface PublicCampaignData {
     targetAmount: number;
     currency: string;
     deadline: string | null;
+    recipientPhone?: string | null;
+    recipientName?: string | null;
     imageUrl: string | null;
     status: 'active' | 'completed' | 'paused';
     totalRaised: number;
@@ -96,6 +98,7 @@ export function PublicCampaign({ slug: propSlug }: { slug?: string }) {
   const [message, setMessage] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedPhone, setCopiedPhone] = useState(false);
   const [successData, setSuccessData] = useState<{ amount: number; name: string } | null>(null);
 
   const { data, isLoading, error } = useQuery<PublicCampaignData>({
@@ -148,6 +151,12 @@ export function PublicCampaign({ slug: propSlug }: { slug?: string }) {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
+  };
+
+  const handleCopyPhone = (num: string) => {
+    navigator.clipboard.writeText(num);
+    setCopiedPhone(true);
+    setTimeout(() => setCopiedPhone(false), 3000);
   };
 
   const handleContribute = (e: React.FormEvent) => {
@@ -354,10 +363,46 @@ export function PublicCampaign({ slug: propSlug }: { slug?: string }) {
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <div>
                   <h2 className="font-serif text-xl font-bold">Send Contribution</h2>
-                  <p className="text-xs text-muted-foreground">Instant Mobile Money payment in UGX</p>
+                  <p className="text-xs text-muted-foreground">Direct Mobile Money payment in UGX</p>
                 </div>
                 <ShieldCheck className="text-emerald-500" size={24} />
               </div>
+
+              {/* Verified Payout Recipient Destination */}
+              {campaign.recipientPhone && (
+                <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                    Send Funds Directly To:
+                  </p>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <div>
+                      <p className="font-mono text-base font-black text-amber-950 dark:text-amber-100">
+                        {campaign.recipientPhone}
+                      </p>
+                      {campaign.recipientName && (
+                        <p className="text-xs font-semibold text-amber-800/90 dark:text-amber-200">
+                          Recipient Name: {campaign.recipientName}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPhone(campaign.recipientPhone!)}
+                      className="flex items-center gap-1 rounded-xl border border-amber-500/30 bg-card px-3 py-1.5 text-xs font-bold text-foreground shadow-sm transition-colors hover:bg-secondary"
+                    >
+                      {copiedPhone ? (
+                        <>
+                          <CheckCircle2 size={13} className="text-emerald-500" /> Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} /> Copy Number
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Success Notification */}
               {successData && (
