@@ -22,6 +22,7 @@ import {
   type ReactNode,
 } from 'react';
 import { setAuthTokenGetter } from '@workspace/api-client-react';
+import { apiFetch, getApiUrl } from './api';
 
 /**
  * Basic authenticated user identity returned by the API
@@ -88,17 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const fetchCurrentUser = useCallback(async (authToken: string) => {
     try {
-      const res = await fetch('/api/me', {
+      const data = await apiFetch<any>('/api/me', {
         headers: {
           Authorization: `Bearer ${authToken}`,
         },
       });
 
-      if (!res.ok) {
-        throw new Error('Unauthorized or expired session');
-      }
-
-      const data = await res.json();
       setUser({
         id: data.id,
         name: data.name,
@@ -136,16 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Log into an existing account with email and password
    */
   const login = async (email: string, password: string) => {
-    const res = await fetch('/api/login', {
+    const data = await apiFetch<any>('/api/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Failed to sign in');
-    }
 
     localStorage.setItem(TOKEN_KEY, data.token);
     setToken(data.token);
@@ -159,16 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Register a new account with starter PostgreSQL records
    */
   const register = async (name: string, email: string, password: string, baseCurrency?: string) => {
-    const res = await fetch('/api/register', {
+    const data = await apiFetch<any>('/api/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, baseCurrency: baseCurrency || 'UGX' }),
     });
-
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Failed to create account');
-    }
 
     localStorage.setItem(TOKEN_KEY, data.token);
     setToken(data.token);

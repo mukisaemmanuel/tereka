@@ -59883,9 +59883,28 @@ app.use(
     }
   })
 );
-app.use((0, import_cors.default)());
+app.use(
+  (0, import_cors.default)({
+    origin: [
+      "http://localhost:5180",
+      "http://localhost:5173",
+      "http://localhost:3000",
+      /\.vercel\.app$/
+      // Allow all Vercel preview and production deployments
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
 app.use(import_express7.default.json({ limit: "10mb" }));
 app.use(import_express7.default.urlencoded({ extended: true, limit: "10mb" }));
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok", service: "tereka-api" });
+});
+app.get("/api/health", (_req, res) => {
+  res.status(200).json({ status: "ok", service: "tereka-api" });
+});
 app.use("/api", routes_default);
 app.use("/", routes_default);
 var app_default = app;

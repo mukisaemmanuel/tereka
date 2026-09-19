@@ -31,6 +31,7 @@ import {
 import { AppShell, Button, Card, EmptyState, Field, Modal, PageHeading, Skeleton, inputClass } from '@/components/layout';
 import { compactMoney, dateLabel, formatCurrency, money } from '@/lib/finance';
 import { useToast } from '@/hooks/use-toast';
+import { getAuthHeaders, getApiUrl } from '@/lib/api';
 
 interface FinancialGoalItem {
   id: string;
@@ -71,13 +72,6 @@ interface AccountItem {
   isActive: boolean;
 }
 
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem('tereka_auth_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
 
 export function Goals() {
   const qc = useQueryClient();

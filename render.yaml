@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: tereka-api
+    runtime: node
+    plan: free
+    buildCommand: pnpm install && pnpm run build:api
+    startCommand: pnpm run start:api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false

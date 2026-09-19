@@ -5,6 +5,8 @@
   "packageManager": "pnpm@9.15.4",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "build:api": "pnpm --filter @workspace/api-server run build",
+    "start:api": "node artifacts/api-server/dist/index.mjs",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
