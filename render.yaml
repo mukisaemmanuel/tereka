@@ -3,7 +3,7 @@ services:
     name: tereka-api
     runtime: node
     plan: free
-    buildCommand: pnpm install && pnpm run build:api
+    buildCommand: pnpm install --no-frozen-lockfile --prod=false && pnpm run build:api
     startCommand: pnpm run start:api
     healthCheckPath: /health
     envVars:
