@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { ArrowDownLeft, ArrowUpRight, Check, Edit3, Filter, Landmark, MoreHorizontal, Plus, Receipt, RefreshCw, Search, Send, Smartphone, Sparkles, Target, Trash2, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Check, CheckCircle2, Edit3, Filter, Landmark, MoreHorizontal, Plus, Receipt, RefreshCw, Search, Send, ShieldAlert, Smartphone, Sparkles, Target, Trash2, Volume2, Wallet } from 'lucide-react';
 import {
   Currency, ProfileTheme, TransactionType, useArchiveAccount, useCreateAccount, useCreateBudget, useCreateCategory, useCreateConversation, useCreateGoal, useCreateTransaction, useDeleteBudget, useDeleteGoal, useDeleteTransaction, useGetAccounts, useGetBudgets, useGetCategories, useGetConversationMessages, useGetConversations, useGetDashboardSummary, useGetGoals, useGetInsights, useGetProfile, useGetTransactions, useSendAssistantMessage, useUpdateAccount, useUpdateBudget, useUpdateGoal, useUpdateProfile, useUpdateTransaction,
   getGetAccountsQueryKey, getGetBudgetsQueryKey, getGetCategoriesQueryKey, getGetConversationMessagesQueryKey, getGetConversationsQueryKey, getGetGoalsQueryKey, getGetProfileQueryKey, getGetTransactionsQueryKey,
@@ -11,6 +11,7 @@ import { AppShell, Button, Card, EmptyState, Field, Modal, PageHeading, Skeleton
 import { DashboardCharts } from '@/components/finance-charts';
 import { compactMoney, dateLabel, formatCurrency, money, transactionIcon } from '@/lib/finance';
 import { applyTheme } from '@/lib/theme';
+import { speak, useBudgetAlert } from '@/lib/budget-alerts';
 
 const currencies = Object.values(Currency);
 const txTypes = Object.values(TransactionType);
@@ -22,9 +23,130 @@ function StatCard({ label, value, detail, accent = 'primary', icon: Icon }: { la
   return <Card className="relative overflow-hidden p-5"><div className={`absolute right-0 top-0 h-20 w-20 translate-x-7 -translate-y-7 rounded-full ${accent === 'gold' ? 'bg-accent/20' : 'bg-primary/10'}`} /><div className="relative flex items-start justify-between"><div><p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p><p className="mt-3 text-2xl font-extrabold tracking-tight">{value}</p><p className="mt-2 text-xs text-muted-foreground">{detail}</p></div><span className={`grid h-9 w-9 place-items-center rounded-xl ${accent === 'gold' ? 'bg-accent/20 text-primary' : 'bg-secondary text-primary'}`}><Icon size={17} /></span></div></Card>;
 }
 
+function AiFinancialWatchCard({ budgets, loading }: { budgets: Budget[]; loading: boolean }) {
+  const watchList = (budgets || []).filter((b) => (b.percentageUsed ?? 0) >= 80);
+
+  return (
+    <Card className="mt-5 overflow-hidden border-amber-500/30 bg-gradient-to-br from-card via-card to-amber-500/5 p-5 sm:p-6" data-testid="card-ai-financial-watch">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shadow-inner">
+            <ShieldAlert size={22} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-serif text-xl font-bold tracking-tight text-foreground">
+                AI Financial Watch
+              </h2>
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-amber-700 dark:text-amber-300">
+                <Sparkles size={11} /> Real-Time Monitor
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Automated threshold detection for categories currently approaching or exceeding limits (&ge;80% capacity).
+            </p>
+          </div>
+        </div>
+        {watchList.length > 0 && (
+          <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full self-start sm:self-auto">
+            {watchList.length} Categor{watchList.length === 1 ? 'y' : 'ies'} On Watch
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="mt-4 space-y-2">
+          <Skeleton className="h-16 rounded-2xl" />
+        </div>
+      ) : watchList.length === 0 ? (
+        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs text-emerald-950 dark:text-emerald-100">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <div className="flex-1">
+            <span className="font-semibold text-sm">All Budgets Within Safe Guardrails</span>
+            <p className="mt-0.5 text-xs opacity-85">
+              No categories have exceeded 80% capacity this month. Your spending velocity is healthy and on track.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {watchList.map((cat) => {
+            const isOver = (cat.percentageUsed ?? 0) >= 100;
+            const remaining = Math.max(0, cat.amount - cat.spent);
+            const overspend = Math.max(0, cat.spent - cat.amount);
+            const adviceText = isOver
+              ? `Warning: You have exceeded your ${cat.categoryName} budget by UGX ${overspend.toLocaleString()}. You are now at ${cat.percentageUsed}% of your monthly limit.`
+              : `Heads up: You have reached ${cat.percentageUsed}% of your ${cat.categoryName} budget (UGX ${cat.spent.toLocaleString()} of UGX ${cat.amount.toLocaleString()}). ${remaining.toLocaleString()} UGX left for this month.`;
+
+            return (
+              <div
+                key={cat.id}
+                className={`rounded-2xl border p-4 transition-all flex flex-col justify-between ${
+                  isOver
+                    ? 'border-red-500/40 bg-red-500/10 text-red-950 dark:text-red-100'
+                    : 'border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100'
+                }`}
+                data-testid={`watch-category-${cat.id}`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-bold text-sm text-foreground">{cat.categoryName}</h3>
+                      <p className="text-xs opacity-75 mt-0.5">
+                        {isOver ? (
+                          <span className="font-semibold text-red-600 dark:text-red-400">
+                            Exceeded by {formatCurrency(overspend, cat.currency)}
+                          </span>
+                        ) : (
+                          <span>{formatCurrency(remaining, cat.currency)} remaining</span>
+                        )}
+                      </p>
+                    </div>
+                    <span
+                      className={`font-mono text-xs font-extrabold px-2.5 py-0.5 rounded-lg ${
+                        isOver ? 'bg-red-600 text-white' : 'bg-amber-600 text-white'
+                      }`}
+                    >
+                      {cat.percentageUsed}%
+                    </span>
+                  </div>
+
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary/80">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        isOver ? 'bg-red-600' : 'bg-amber-500'
+                      }`}
+                      style={{ width: `${Math.min(100, cat.percentageUsed ?? 0)}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between text-[11px] opacity-80">
+                    <span>Spent {formatCurrency(cat.spent, cat.currency)}</span>
+                    <span>Limit {formatCurrency(cat.amount, cat.currency)}</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => speak(adviceText)}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border/80 bg-card/80 py-1.5 text-xs font-semibold text-foreground hover:bg-card hover:border-primary/50 transition-all shadow-2xs"
+                  title="Listen to voice advice"
+                >
+                  <Volume2 size={13} className="text-primary" />
+                  <span>Listen to Warning</span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function Dashboard() {
-  const summaryQuery = useGetDashboardSummary(); const insightQuery = useGetInsights();
-  const summary = summaryQuery.data; const insights = insightQuery.data || [];
+  const summaryQuery = useGetDashboardSummary(); const insightQuery = useGetInsights(); const budgetsQuery = useGetBudgets();
+  const summary = summaryQuery.data; const insights = insightQuery.data || []; const budgets = budgetsQuery.data || [];
   if (summaryQuery.isLoading) return <AppShell><DashboardSkeleton /></AppShell>;
   if (summaryQuery.isError || !summary) return <AppShell><ErrorState retry={() => summaryQuery.refetch()} /></AppShell>;
   
@@ -67,6 +189,10 @@ function Dashboard() {
           icon={Receipt}
         />
       </div>
+
+      {/* AI Financial Watch: Real-time budget threshold monitoring (&ge;80% capacity) */}
+      <AiFinancialWatchCard budgets={budgets} loading={budgetsQuery.isLoading} />
+
       <DashboardCharts summary={summary} />
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
         <Card className="p-5 sm:p-6">
@@ -103,9 +229,33 @@ const blankTx = (): TransactionForm => ({ type: 'expense', amount: '', currency:
 
 function Transactions() {
   const qc = useQueryClient(); const [search, setSearch] = useState(''); const [type, setType] = useState<'all' | TransactionTypeValue>('all'); const [modal, setModal] = useState<'add' | Transaction | null>(null);
+  const { triggerBudgetAlert } = useBudgetAlert();
   const params = { search: search || undefined, type: type === 'all' ? undefined : type }; const query = useGetTransactions(params); const accounts = useGetAccounts(); const categories = useGetCategories(); const create = useCreateTransaction(); const update = useUpdateTransaction(); const remove = useDeleteTransaction();
   const list = query.data || []; const editing = modal && modal !== 'add' ? modal : null;
-  const save = (form: TransactionForm) => { const data = { ...form, currency: 'UGX' as CurrencyType, amount: Number(form.amount), notes: form.notes || undefined }; if (editing) update.mutate({ id: editing.id, data }, { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetTransactionsQueryKey(params) }); setModal(null); } }); else create.mutate({ data }, { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetTransactionsQueryKey(params) }); setModal(null); } }); };
+  const save = (form: TransactionForm) => {
+    const data = { ...form, currency: 'UGX' as CurrencyType, amount: Number(form.amount), notes: form.notes || undefined };
+    if (editing) {
+      update.mutate({ id: editing.id, data }, {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getGetTransactionsQueryKey(params) });
+          qc.invalidateQueries({ queryKey: getGetBudgetsQueryKey() });
+          setModal(null);
+        }
+      });
+    } else {
+      create.mutate({ data }, {
+        onSuccess: (res: any) => {
+          qc.invalidateQueries({ queryKey: getGetTransactionsQueryKey(params) });
+          qc.invalidateQueries({ queryKey: getGetBudgetsQueryKey() });
+          setModal(null);
+          const alertMsg = res?.alert || res?.data?.alert;
+          if (alertMsg) {
+            triggerBudgetAlert(alertMsg);
+          }
+        }
+      });
+    }
+  };
   return <AppShell><PageHeading eyebrow="Money movement" title="Transactions" description="Every entry is a piece of context. Keep the picture honest." action={<Button onClick={() => setModal('add')} data-testid="button-add-transaction"><Plus size={16} /> Add transaction</Button>} /><Card className="overflow-hidden"><div className="flex flex-col gap-3 border-b border-border bg-secondary/35 p-4 sm:flex-row"><div className="relative flex-1"><Search size={16} className="absolute left-3 top-3.5 text-muted-foreground" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search descriptions or categories" className={`${inputClass} pl-10`} data-testid="input-search-transactions" /></div><div className="flex gap-2"><select value={type} onChange={(e) => setType(e.target.value as any)} className={`${inputClass} sm:w-36`} data-testid="select-transaction-type"><option value="all">All types</option><option value="income">Income</option><option value="expense">Expenses</option></select><Button variant="secondary" className="px-3" title="Filters are ready" data-testid="button-filter-transactions"><Filter size={16} /></Button></div></div>{query.isLoading ? <div className="space-y-4 p-5">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12" />)}</div> : query.isError ? <div className="p-5"><ErrorState retry={() => query.refetch()} /></div> : list.length ? <div className="divide-y divide-border">{list.map((tx) => <div key={tx.id} className="group flex items-center gap-3 px-4 py-1 hover:bg-secondary/25 sm:px-6"><div className="min-w-0 flex-1"><TransactionRow transaction={tx} /></div><div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"><button onClick={() => setModal(tx)} className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-primary" data-testid={`button-edit-transaction-${tx.id}`}><Edit3 size={15} /></button><button onClick={() => { if (window.confirm('Delete this transaction?')) remove.mutate({ id: tx.id }, { onSuccess: () => qc.invalidateQueries({ queryKey: getGetTransactionsQueryKey(params) }) }); }} className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" data-testid={`button-delete-transaction-${tx.id}`}><Trash2 size={15} /></button></div></div>)}</div> : <EmptyState title="No transactions here yet" body="Try another search, or add the first entry to your money story." action={<Button onClick={() => setModal('add')} data-testid="button-empty-add-transaction"><Plus size={15} /> Add transaction</Button>} />}</Card>{modal && <TransactionModal initial={editing || undefined} accounts={accounts.data || []} categories={categories.data || []} pending={create.isPending || update.isPending} onClose={() => setModal(null)} onSave={save} />}</AppShell>;
 }
 

@@ -12,6 +12,7 @@ import { Vaults } from '@/pages/vaults';
 import { PublicCampaign } from '@/pages/public-campaign';
 import { ForgotPassword, Login, Signup } from '@/pages/auth';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
+import { BudgetAlertProvider } from '@/lib/budget-alerts';
 import {
   Redirect,
   Route,
@@ -131,12 +132,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
+        <BudgetAlertProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </BudgetAlertProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

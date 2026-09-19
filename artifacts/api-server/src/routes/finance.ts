@@ -432,6 +432,49 @@ router.post("/transactions", async (req: AuthenticatedRequest, res) => {
       db.select().from(categoriesTable).where(eq(categoriesTable.id, body.categoryId)).limit(1),
     ]);
 
+    // Real-Time Budget Advisory Engine
+    let alert: string | null = null;
+    if (body.type === "expense") {
+      const currentMonthPrefix = txDate.slice(0, 7); // e.g. "2026-09"
+      const [budget] = await db
+        .select()
+        .from(budgetsTable)
+        .where(and(eq(budgetsTable.userId, userId), eq(budgetsTable.categoryId, body.categoryId)))
+        .limit(1);
+
+      if (budget) {
+        const budgetAmount = Number(budget.amount);
+        if (budgetAmount > 0) {
+          const monthTxs = await db
+            .select()
+            .from(transactionsTable)
+            .where(
+              and(
+                eq(transactionsTable.userId, userId),
+                eq(transactionsTable.categoryId, body.categoryId),
+                eq(transactionsTable.type, "expense"),
+                sql`${transactionsTable.transactionDate} LIKE ${currentMonthPrefix + "%"}`
+              )
+            );
+
+          const totalSpend = monthTxs.reduce(
+            (sum, t) => sum + Number(t.amount) + Number(t.feeAmount || 0),
+            0
+          );
+          const percentage = Math.round((totalSpend / budgetAmount) * 100);
+          const categoryName = cats[0]?.name || "Budget";
+
+          if (percentage >= 80 && percentage < 100) {
+            const remaining = Math.max(0, budgetAmount - totalSpend);
+            alert = `Heads up: You have reached ${percentage}% of your ${categoryName} budget (UGX ${totalSpend.toLocaleString()} of UGX ${budgetAmount.toLocaleString()}). ${remaining.toLocaleString()} UGX left for this month.`;
+          } else if (percentage >= 100) {
+            const overspend = Math.max(0, totalSpend - budgetAmount);
+            alert = `Warning: You have exceeded your ${categoryName} budget by UGX ${overspend.toLocaleString()}. You are now at ${percentage}% of your monthly limit.`;
+          }
+        }
+      }
+    }
+
     return res.status(201).json({
       id: txId,
       userId,
@@ -446,6 +489,7 @@ router.post("/transactions", async (req: AuthenticatedRequest, res) => {
       description: body.description,
       notes: body.notes ?? null,
       transactionDate: txDate,
+      alert,
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "Failed to create transaction" });

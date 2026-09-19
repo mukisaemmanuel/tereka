@@ -7,6 +7,7 @@ import { Bot, CircleHelp, Gauge, Goal, Handshake, LayoutGrid, LogOut, Menu, Moon
 import { initials } from '@/lib/finance';
 import { applyTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth-context';
+import { BudgetAlertBanner } from '@/lib/budget-alerts';
 
 const nav = [
   { href: '/', label: 'Overview', icon: Gauge },
@@ -89,6 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3"><button className="rounded-xl border border-border p-2.5 lg:hidden" onClick={() => setMobileOpen(true)} data-testid="button-open-menu"><Menu size={19} /></button><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-muted-foreground">Tereka / {currentLabel}</p><p className="mt-0.5 text-sm font-semibold text-foreground/75">{location === '/' ? 'Your money, in a clearer light.' : `A closer look at your ${currentLabel.toLowerCase()}.`}</p></div></div>
            <div className="flex items-center gap-2"><Link href="/assistant" className="hidden items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-bold text-foreground/75 hover:border-primary/40 hover:bg-secondary sm:flex" data-testid="link-header-assistant"><Bot size={15} className="text-primary" /> Ask Tereka</Link><button className="rounded-xl p-2 text-muted-foreground hover:bg-secondary" title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} onClick={toggleTheme} disabled={updateProfile.isPending} data-testid="button-toggle-theme">{isDark ? <Sun size={17} /> : <Moon size={17} />}</button><button className="rounded-xl p-2 text-muted-foreground hover:bg-secondary" title="Sign out" onClick={() => { logout(); setLocation('/login'); }} data-testid="button-sign-out"><LogOut size={17} /></button></div>
         </header>
+        <BudgetAlertBanner />
         <div className="page-in px-5 py-7 sm:px-8 sm:py-10 lg:px-12">{children}</div>
       </main>
     </div>
