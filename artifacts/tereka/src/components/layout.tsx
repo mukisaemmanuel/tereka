@@ -128,7 +128,7 @@ export function Modal({ title, children, onClose }: { title: string; children: R
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-5"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/65 p-4 pt-16 pb-8 backdrop-blur-md sm:p-6 sm:pt-20"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
@@ -138,8 +138,8 @@ export function Modal({ title, children, onClose }: { title: string; children: R
       aria-modal="true"
       data-testid="modal-backdrop"
     >
-      <div className="relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-border bg-card p-6 shadow-2xl sm:rounded-3xl">
-        <div className="mb-6 flex items-center justify-between border-b border-border/60 pb-4">
+      <div className="relative my-auto max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-card p-6 shadow-2xl sm:p-7">
+        <div className="mb-6 flex items-center justify-between border-b border-border/70 pb-4">
           <h2 className="font-serif text-2xl font-bold tracking-tight text-foreground">{title}</h2>
           <button
             type="button"
