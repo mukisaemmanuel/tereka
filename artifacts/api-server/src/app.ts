@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import path from "node:path";
 import fs from "node:fs";
 import cors from "cors";
@@ -6,7 +6,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
-const app: Express = express();
+const app = express();
 
 app.use(
   pinoHttp({
@@ -46,10 +46,10 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Health check endpoints (for Railway, Render, etc.)
-app.get("/health", (_req, res) => {
+app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({ status: "ok", service: "tereka-api" });
 });
-app.get("/api/health", (_req, res) => {
+app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({ status: "ok", service: "tereka-api" });
 });
 
@@ -60,7 +60,7 @@ app.use("/", router);
 const distPath = path.resolve("dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.method !== "GET" || req.path.startsWith("/api") || req.path === "/health") {
       return next();
     }
