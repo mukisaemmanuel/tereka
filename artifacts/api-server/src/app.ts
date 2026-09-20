@@ -60,8 +60,8 @@ app.use("/", router);
 const distPath = path.resolve("dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api") || req.path === "/health") {
+  app.use((req, res, next) => {
+    if (req.method !== "GET" || req.path.startsWith("/api") || req.path === "/health") {
       return next();
     }
     const indexPath = path.join(distPath, "index.html");
