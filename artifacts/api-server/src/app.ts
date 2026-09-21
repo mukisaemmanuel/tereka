@@ -1,6 +1,4 @@
-import express, { type Request, type Response, type NextFunction } from "express";
-import path from "node:path";
-import fs from "node:fs";
+import express, { type Request, type Response } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
@@ -54,23 +52,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api", router);
-app.use("/", router);
 
-// Serve static frontend when deployed as a full-stack monolithic container
-const distPath = path.resolve("dist");
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.method !== "GET" || req.path.startsWith("/api") || req.path === "/health") {
-      return next();
-    }
-    const indexPath = path.join(distPath, "index.html");
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      next();
-    }
-  });
-}
+
 
 export default app;

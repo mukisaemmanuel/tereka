@@ -100,24 +100,26 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
   };
 
-  // 1. Build standalone Node server (dist/index.mjs)
+  // 1. Build standalone Node server CommonJS bundle (dist/index.cjs)
   await esbuild({
     entryPoints: [path.resolve(artifactDir, "src/index.ts")],
     platform: "node",
     bundle: true,
-    format: "esm",
+    format: "cjs",
     outdir: distDir,
-    outExtension: { ".js": ".mjs" },
+    outExtension: { ".js": ".cjs" },
     logLevel: "info",
     external: commonExternal,
     sourcemap: "linked",
     plugins: [
       esbuildPluginPino({ transports: ["pino-pretty"] })
     ],
-    banner,
   });
 
-  await copyFile(path.resolve(distDir, "index.mjs"), path.resolve(distDir, "index.js"));
+  // Copy index.cjs to index.js for compatibility
+  await copyFile(path.resolve(distDir, "index.cjs"), path.resolve(distDir, "index.js"));
+
+
 
   // 2. Build Vercel Serverless Functions (root api/index.js and api/[...slug].js)
   const rootApiDir = path.resolve(artifactDir, "../../api");

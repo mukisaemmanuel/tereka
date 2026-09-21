@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: free
     buildCommand: pnpm install --no-frozen-lockfile --prod=false && pnpm run build
-    startCommand: node artifacts/api-server/dist/index.mjs
-    healthCheckPath: /health
+    startCommand: node artifacts/api-server/dist/index.cjs
+    healthCheckPath: /api/healthz
     envVars:
       - key: NODE_ENV
         value: production

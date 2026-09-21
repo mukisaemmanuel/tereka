@@ -2,19 +2,18 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
+
 import * as schema from "./schema";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentDirname = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
 const { Pool } = pg;
 
-let activeDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.SUPABASE_DATABASE_URL || process.env.POSTGRES_PRISMA_URL;
+let activeDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
 
 if (!activeDbUrl) {
   const rootEnvPath = path.resolve(process.cwd(), ".env");
-  const fallbackEnvPath = path.resolve(__dirname, "../../../.env");
+  const fallbackEnvPath = path.resolve(currentDirname, "../../../.env");
   const envPath = fs.existsSync(rootEnvPath) ? rootEnvPath : fs.existsSync(fallbackEnvPath) ? fallbackEnvPath : null;
   if (envPath) {
     const envContent = fs.readFileSync(envPath, "utf-8");
@@ -29,7 +28,7 @@ if (!activeDbUrl) {
       }
     }
   }
-  activeDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.SUPABASE_DATABASE_URL || process.env.POSTGRES_PRISMA_URL;
+  activeDbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
 }
 
 if (!activeDbUrl) {
@@ -40,10 +39,19 @@ if (!activeDbUrl) {
 
 process.env.DATABASE_URL = activeDbUrl;
 
-const isRemote = process.env.DATABASE_URL.includes("supabase") || process.env.DATABASE_URL.includes("sslmode=require");
+const isInternalOrLocal =
+  activeDbUrl.includes("localhost") ||
+  activeDbUrl.includes("127.0.0.1") ||
+  activeDbUrl.includes(".railway.internal");
+
+const requiresSsl =
+  activeDbUrl.includes("sslmode=require") ||
+  activeDbUrl.includes("ssl=true") ||
+  (!isInternalOrLocal && process.env.NODE_ENV === "production");
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ...(isRemote ? { ssl: { rejectUnauthorized: false } } : {}),
+  ...(requiresSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 export const db = drizzle(pool, { schema });
 
