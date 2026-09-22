@@ -59902,10 +59902,7 @@ app.use(
 );
 app.use(import_express7.default.json({ limit: "10mb" }));
 app.use(import_express7.default.urlencoded({ extended: true, limit: "10mb" }));
-app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok", service: "tereka-api" });
-});
-app.get("/api/health", (_req, res) => {
+app.get(["/health", "/healthz", "/api/health", "/api/healthz"], (_req, res) => {
   res.status(200).json({ status: "ok", service: "tereka-api" });
 });
 app.use("/api", routes_default);

@@ -43,11 +43,8 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Health check endpoints (for Railway, Render, etc.)
-app.get("/health", (_req: Request, res: Response) => {
-  res.status(200).json({ status: "ok", service: "tereka-api" });
-});
-app.get("/api/health", (_req: Request, res: Response) => {
+// Health check endpoints (for Railway, Render, Kubernetes, etc.)
+app.get(["/health", "/healthz", "/api/health", "/api/healthz"], (_req: Request, res: Response) => {
   res.status(200).json({ status: "ok", service: "tereka-api" });
 });
 

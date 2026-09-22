@@ -2,11 +2,21 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pnpm install --no-frozen-lockfile && pnpm run build"
+    "buildCommand": "pnpm install --no-frozen-lockfile && pnpm run build",
+    "nixpacksPlan": {
+      "phases": {
+        "install": {
+          "cmds": ["pnpm install --no-frozen-lockfile"]
+        },
+        "build": {
+          "cmds": ["pnpm run build"]
+        }
+      }
+    }
   },
   "deploy": {
     "startCommand": "node artifacts/api-server/dist/index.cjs",
-    "healthcheckPath": "/api/healthz",
+    "healthcheckPath": "/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
