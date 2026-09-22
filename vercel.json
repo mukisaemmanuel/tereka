@@ -3,7 +3,17 @@
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
+  "functions": {
+    "api/index.js": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
