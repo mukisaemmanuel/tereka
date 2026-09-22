@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm run build && node -e \"require('fs').cpSync('artifacts/tereka/dist', 'dist', {recursive: true})\"",
-  "outputDirectory": "dist",
+  "outputDirectory": "artifacts/tereka/dist",
   "cleanUrls": true,
   "rewrites": [
     {
