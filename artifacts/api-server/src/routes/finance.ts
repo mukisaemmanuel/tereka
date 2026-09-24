@@ -67,6 +67,7 @@ import {
   vaultsTable,
 } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
+import { parserService } from "../services/parser.service";
 
 const router = Router();
 const notFound = (res: Parameters<Parameters<typeof router.get>[1]>[1]) =>
@@ -76,7 +77,43 @@ const notFound = (res: Parameters<Parameters<typeof router.get>[1]>[1]) =>
 const calendarDate = (value: Date | string | undefined) =>
   value instanceof Date ? value.toISOString().slice(0, 10) : value;
 
-// Enforce JWT authentication on all finance endpoints
+/**
+ * POST /api/transactions/parse
+ * High-precision Ugandan SMS (MTN MoMo, Airtel Money) and natural language parser.
+ * Accepts: { text: string }
+ * Returns: { success: true, data: ParsedTransaction }
+ */
+router.post("/transactions/parse", async (req, res) => {
+  try {
+    const { text } = req.body || {};
+    if (!text || typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required parameter: 'text' (string)",
+      });
+    }
+
+    const parsed = parserService.parse(text);
+    if (!parsed) {
+      return res.status(422).json({
+        success: false,
+        error: "Could not parse transaction details from the provided text",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: parsed,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      error: err.message || "Failed to parse transaction",
+    });
+  }
+});
+
+// Enforce JWT authentication on all standard finance endpoints below
 router.use(requireAuth);
 
 /**

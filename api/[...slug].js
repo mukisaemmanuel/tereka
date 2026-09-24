@@ -57237,10 +57237,591 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// src/services/parser.service.ts
+var CATEGORY_MAP = {
+  "Transport": [
+    "fuel",
+    "petrol",
+    "diesel",
+    "total",
+    "totalenergies",
+    "shell",
+    "engen",
+    "stabex",
+    "rubis",
+    "city oil",
+    "hass",
+    "boda",
+    "safeboda",
+    "uber",
+    "bolt",
+    "taxi",
+    "matatu",
+    "fare",
+    "transport",
+    "parking",
+    "car service",
+    "car wash",
+    "garage",
+    "mechanic",
+    "tyre",
+    "expressway"
+  ],
+  "Food": [
+    "lunch",
+    "dinner",
+    "breakfast",
+    "food",
+    "restaurant",
+    "cafe",
+    "groceries",
+    "supermarket",
+    "market",
+    "snack",
+    "coffee",
+    "javas",
+    "cafe javas",
+    "kfc",
+    "pizza",
+    "rolex",
+    "pork",
+    "meat",
+    "beef",
+    "chicken",
+    "fish",
+    "vegetables",
+    "bread",
+    "takeaway",
+    "drinks",
+    "bar",
+    "club",
+    "bakery",
+    "carrefour",
+    "capital shoppers",
+    "quality supermarket"
+  ],
+  "Rent": [
+    "rent",
+    "landlord",
+    "hostel",
+    "apartment",
+    "quarterly rent",
+    "monthly rent",
+    "tenancy",
+    "housing",
+    "estate",
+    "broker"
+  ],
+  "Utilities": [
+    "umeme",
+    "yaka",
+    "nwsc",
+    "water",
+    "electricity",
+    "power",
+    "dstv",
+    "gotv",
+    "startimes",
+    "azatv",
+    "wifi",
+    "internet",
+    "airtime",
+    "data",
+    "bundle",
+    "garbage",
+    "waste",
+    "sewage",
+    "solarpower",
+    "zuku"
+  ],
+  "Salary": [
+    "salary",
+    "allowance",
+    "stipend",
+    "wage",
+    "freelance",
+    "bonus",
+    "dividend",
+    "payroll",
+    "net pay",
+    "remuneration",
+    "commission"
+  ],
+  "Health": [
+    "hospital",
+    "clinic",
+    "pharmacy",
+    "drugs",
+    "medicine",
+    "doctor",
+    "consultation",
+    "lab",
+    "dental",
+    "optical",
+    "medication",
+    "first pharmacy",
+    "friecca"
+  ],
+  "Education": [
+    "school fees",
+    "tuition",
+    "fees",
+    "uniform",
+    "books",
+    "stationery",
+    "exam",
+    "admission"
+  ],
+  "Savings & Investments": [
+    "sacco",
+    "investment",
+    "shares",
+    "unit trust",
+    "treasury",
+    "bonds",
+    "chama",
+    "savings",
+    "tereka vault",
+    "tereka",
+    "deposit to bank"
+  ]
+};
+var ParserService = class {
+  /**
+   * Main entry point: Parses an input text (SMS or natural language note).
+   */
+  parse(rawText) {
+    if (!rawText || typeof rawText !== "string") return null;
+    const trimmed = rawText.trim();
+    if (!trimmed) return null;
+    const hasAirtelIndicator = /Airtel/i.test(trimmed) || /Trans(?:\.|\s*)ID:/i.test(trimmed);
+    const hasMtnIndicator = /Y'ello/i.test(trimmed) || /Financial Transaction Id:/i.test(trimmed) || /\bMoMo\b/i.test(trimmed);
+    if (hasAirtelIndicator) {
+      const airtelResult = this.parseAirtelMoney(trimmed);
+      if (airtelResult) return airtelResult;
+    }
+    if (hasMtnIndicator || /(?:You have received|You have paid|transferred to|Cash Out of)\s+(?:UGX|Shs|USh)?\s*[\d,]+/i.test(trimmed)) {
+      const mtnResult = this.parseMtnMoMo(trimmed);
+      if (mtnResult) return mtnResult;
+    }
+    if (!hasAirtelIndicator) {
+      const airtelResult = this.parseAirtelMoney(trimmed);
+      if (airtelResult) return airtelResult;
+    }
+    const nlResult = this.parseNaturalLanguage(trimmed);
+    if (nlResult) return nlResult;
+    return this.parseGenericSms(trimmed);
+  }
+  /**
+   * --------------------------------------------------------------------------
+   * 1. MTN MoMo Uganda Parser
+   * --------------------------------------------------------------------------
+   */
+  parseMtnMoMo(text2) {
+    const feeAmount = this.extractFee(text2);
+    const balance = this.extractBalance(text2);
+    const referenceId = this.extractFinancialTxId(text2) || this.extractRefText(text2);
+    const transactionDate = this.extractDate(text2);
+    const recvMatch = text2.match(/(?:You have received|received)\s+(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s+from\s+([^.]+?)(?:\s+\bon\b\s+[\d-]+\s+[\d:]+|\.|$)/i);
+    if (recvMatch && !/transferred to/i.test(text2)) {
+      const amount = this.cleanNumber(recvMatch[1]);
+      if (amount > 0) {
+        const counterparty = this.cleanCounterparty(recvMatch[2]);
+        const refMatch = text2.match(/Reference:\s*([^.]+)/i);
+        const refText = refMatch ? refMatch[1].trim() : void 0;
+        const desc2 = refText ? `Received: ${refText}` : `Received from ${counterparty || "Sender"}`;
+        return {
+          source: "MTN_MOMO",
+          type: "income",
+          amount,
+          currency: "UGX",
+          category: this.categorize(`${refText || ""} ${counterparty || ""}`, "income"),
+          confidence: 0.98,
+          description: desc2,
+          counterparty,
+          feeAmount: 0,
+          balance,
+          referenceId,
+          transactionDate,
+          paymentMethod: "MTN MoMo",
+          rawText: text2
+        };
+      }
+    }
+    const paidMatch = text2.match(/(?:You have paid|Payment of|UGX\s*[\d,]+\s*paid to)\s+(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s+to\s+([^.]+?)(?:\s+\bon\b\s+[\d-]+\s+[\d:]+|\s+completed|\.|$)/i);
+    if (paidMatch) {
+      const amount = this.cleanNumber(paidMatch[1]);
+      if (amount > 0) {
+        const counterparty = this.cleanCounterparty(paidMatch[2]);
+        const refKeyword = this.extractRefText(text2);
+        const desc2 = counterparty ? `Paid to ${counterparty}` : refKeyword ? `Paid: ${refKeyword}` : "Merchant Payment";
+        return {
+          source: "MTN_MOMO",
+          type: "expense",
+          amount,
+          currency: "UGX",
+          category: this.categorize(`${counterparty || ""} ${refKeyword || ""}`, "expense"),
+          confidence: 0.98,
+          description: desc2,
+          counterparty,
+          feeAmount,
+          balance,
+          referenceId,
+          transactionDate,
+          paymentMethod: "MTN MoMo",
+          rawText: text2
+        };
+      }
+    }
+    const transferMatch = text2.match(/(?:(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s*transferred to|You have transferred\s+(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s+to)\s+([^.]+?)(?:\s+\bon\b\s+[\d-]+\s+[\d:]+|\.|$)/i);
+    if (transferMatch) {
+      const amount = this.cleanNumber(transferMatch[1] || transferMatch[2]);
+      if (amount > 0) {
+        const counterparty = this.cleanCounterparty(transferMatch[3]);
+        const refKeyword = this.extractRefText(text2);
+        return {
+          source: "MTN_MOMO",
+          type: "expense",
+          amount,
+          currency: "UGX",
+          category: this.categorize(`${counterparty || ""} ${refKeyword || ""}`, "expense"),
+          confidence: 0.98,
+          description: `Transfer to ${counterparty || "Recipient"}`,
+          counterparty,
+          feeAmount,
+          balance,
+          referenceId,
+          transactionDate,
+          paymentMethod: "MTN MoMo",
+          rawText: text2
+        };
+      }
+    }
+    const cashOutMatch = text2.match(/(?:Cash Out of|withdrawn)\s+(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s+(?:from\s+(?:agent\s+)?([^.]+?))?\s*was successful/i);
+    if (cashOutMatch) {
+      const amount = this.cleanNumber(cashOutMatch[1]);
+      if (amount > 0) {
+        const agent = this.cleanCounterparty(cashOutMatch[2]);
+        return {
+          source: "MTN_MOMO",
+          type: "expense",
+          amount,
+          currency: "UGX",
+          category: "Cash Out",
+          confidence: 0.98,
+          description: `Cash Out via Agent ${agent || ""}`.trim(),
+          counterparty: agent,
+          feeAmount,
+          balance,
+          referenceId,
+          transactionDate,
+          paymentMethod: "MTN MoMo",
+          rawText: text2
+        };
+      }
+    }
+    return null;
+  }
+  /**
+   * --------------------------------------------------------------------------
+   * 2. Airtel Money Uganda Parser
+   * --------------------------------------------------------------------------
+   */
+  parseAirtelMoney(text2) {
+    const feeAmount = this.extractFee(text2);
+    const balance = this.extractBalance(text2);
+    const referenceId = this.extractTransId(text2);
+    const transactionDate = this.extractDate(text2);
+    const recvMatch = text2.match(/You have received\s+(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s+from\s+([^.]+?)(?:\s+\bon\b\s+[\d-]+\s+[\d:]+|\.|$)/i);
+    if (recvMatch) {
+      const amount = this.cleanNumber(recvMatch[1]);
+      if (amount > 0) {
+        const counterparty = this.cleanCounterparty(recvMatch[2]);
+        return {
+          source: "AIRTEL_MONEY",
+          type: "income",
+          amount,
+          currency: "UGX",
+          category: this.categorize(counterparty || "Income", "income"),
+          confidence: 0.98,
+          description: `Received from ${counterparty || "Sender"}`,
+          counterparty,
+          feeAmount: 0,
+          balance,
+          referenceId,
+          transactionDate,
+          paymentMethod: "Airtel Money",
+          rawText: text2
+        };
+      }
+    }
+    const sentPaidMatch = text2.match(/(?:(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s*(?:sent|paid)\s*to|Payment of\s*(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s*to|You have (?:sent|paid)\s*(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s*to)\s+([^.]+?)(?:\s+\bon\b\s+[\d-]+\s+[\d:]+|\s+was successful|\.|$)/i);
+    if (sentPaidMatch) {
+      const amount = this.cleanNumber(sentPaidMatch[1] || sentPaidMatch[2] || sentPaidMatch[3]);
+      if (amount > 0) {
+        const counterparty = this.cleanCounterparty(sentPaidMatch[4]);
+        const infoMatch = text2.match(/Info:\s*([^.]+)/i);
+        const infoText = infoMatch ? infoMatch[1].trim() : "";
+        const desc2 = counterparty ? `Paid to ${counterparty}` : infoText || "Airtel Money Payment";
+        return {
+          source: "AIRTEL_MONEY",
+          type: "expense",
+          amount,
+          currency: "UGX",
+          category: this.categorize(`${counterparty || ""} ${infoText}`, "expense"),
+          confidence: 0.98,
+          description: desc2,
+          counterparty,
+          feeAmount,
+          balance,
+          referenceId,
+          transactionDate,
+          paymentMethod: "Airtel Money",
+          rawText: text2
+        };
+      }
+    }
+    const withMatch = text2.match(/withdrawn\s+(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\s+from\s+(?:Agent\s+)?([^.]+?)(?:\s+\bon\b|\.|$)/i);
+    if (withMatch) {
+      const amount = this.cleanNumber(withMatch[1]);
+      if (amount > 0) {
+        const agent = this.cleanCounterparty(withMatch[2]);
+        return {
+          source: "AIRTEL_MONEY",
+          type: "expense",
+          amount,
+          currency: "UGX",
+          category: "Cash Out",
+          confidence: 0.98,
+          description: `Cash Out via Agent ${agent || ""}`.trim(),
+          counterparty: agent,
+          feeAmount,
+          balance,
+          referenceId,
+          transactionDate,
+          paymentMethod: "Airtel Money",
+          rawText: text2
+        };
+      }
+    }
+    return null;
+  }
+  /**
+   * --------------------------------------------------------------------------
+   * 3. Natural Language Shorthand Parser
+   * --------------------------------------------------------------------------
+   * Parses notes like:
+   * - "Spent 15k on lunch via cash"
+   * - "Paid 50k for fuel using momo"
+   * - "Got 200k from freelancing"
+   * - "Boda 5k"
+   * - "Lunch 12k"
+   * - "Received 500,000 as salary into bank"
+   */
+  parseNaturalLanguage(text2) {
+    const isIncome = /\b(got|received|earned|income|salary|dividend|refund|credited)\b/i.test(text2);
+    const type = isIncome ? "income" : "expense";
+    const amountData = this.extractShorthandAmount(text2);
+    if (!amountData) return null;
+    const { amount, currency } = amountData;
+    let paymentMethod = "Cash";
+    if (/\b(momo|mtn)\b/i.test(text2)) {
+      paymentMethod = "MTN MoMo";
+    } else if (/\b(airtel)\b/i.test(text2)) {
+      paymentMethod = "Airtel Money";
+    } else if (/\b(bank|card|visa|mastercard|stanbic|centenary|dfcu|absa)\b/i.test(text2)) {
+      paymentMethod = "Bank";
+    } else if (/\bcash\b/i.test(text2)) {
+      paymentMethod = "Cash";
+    }
+    let cleanDesc = text2.replace(/\b(spent|paid|used|cost|got|received|earned|deposit|bought)\b/gi, "").replace(/\b(via|using|by|through|with|for|on|as|into|from|at)\b/gi, "").replace(/\b(cash|momo|mtn|airtel|bank)\b/gi, "").replace(/(?:UGX|Shs|USh)?\s*\d+(?:\.\d+)?\s*[kKmMbB]?/gi, "").replace(/[,\-_.]+/g, " ").replace(/\s+/g, " ").trim();
+    if (!cleanDesc || cleanDesc.length < 2) {
+      cleanDesc = type === "income" ? "Income Deposit" : "Expense";
+    } else {
+      cleanDesc = cleanDesc.charAt(0).toUpperCase() + cleanDesc.slice(1);
+    }
+    const category = this.categorize(text2, type);
+    return {
+      source: "NATURAL_LANGUAGE",
+      type,
+      amount,
+      currency,
+      category,
+      confidence: 0.9,
+      description: cleanDesc,
+      paymentMethod,
+      rawText: text2
+    };
+  }
+  /**
+   * --------------------------------------------------------------------------
+   * 4. Generic SMS Fallback Parser
+   * --------------------------------------------------------------------------
+   */
+  parseGenericSms(text2) {
+    const amountData = this.extractShorthandAmount(text2);
+    if (!amountData || amountData.amount <= 0) return null;
+    const isIncome = /\b(received|credited|deposit|inward)\b/i.test(text2);
+    const type = isIncome ? "income" : "expense";
+    const category = this.categorize(text2, type);
+    return {
+      source: "GENERIC_SMS",
+      type,
+      amount: amountData.amount,
+      currency: amountData.currency || "UGX",
+      category,
+      confidence: 0.65,
+      description: text2.slice(0, 50),
+      rawText: text2
+    };
+  }
+  /**
+   * --------------------------------------------------------------------------
+   * Helper: Categorize based on keywords
+   * --------------------------------------------------------------------------
+   */
+  categorize(text2, type = "expense") {
+    const lower = text2.toLowerCase();
+    for (const [category, keywords] of Object.entries(CATEGORY_MAP)) {
+      for (const kw of keywords) {
+        const regex = new RegExp(`\\b${kw}\\b`, "i");
+        if (regex.test(lower)) {
+          return category;
+        }
+      }
+    }
+    if (type === "income") return "Salary & Income";
+    return "General Expense";
+  }
+  /**
+   * --------------------------------------------------------------------------
+   * Helper: Parse amount shorthand (e.g. 15k -> 15000, 1.5m -> 1500000)
+   * --------------------------------------------------------------------------
+   */
+  extractShorthandAmount(text2) {
+    const suffixMatch = text2.match(/(?:UGX|Shs|USh)?\s*(\d+(?:\.\d+)?)\s*([kKmMbB])\b/);
+    if (suffixMatch) {
+      const num = parseFloat(suffixMatch[1]);
+      const suffix = suffixMatch[2].toLowerCase();
+      let multiplier = 1;
+      if (suffix === "k") multiplier = 1e3;
+      else if (suffix === "m") multiplier = 1e6;
+      else if (suffix === "b") multiplier = 1e9;
+      return {
+        amount: Math.round(num * multiplier),
+        currency: "UGX"
+      };
+    }
+    const stdMatch = text2.match(/(?:UGX|Shs|USh)?\s*([\d]{1,3}(?:,\d{3})+(?:\.\d+)?|\b\d{3,}(?:\.\d+)?)\b/);
+    if (stdMatch) {
+      const rawNum = stdMatch[1].replace(/,/g, "");
+      const amount = Math.round(parseFloat(rawNum));
+      if (!isNaN(amount) && amount > 0) {
+        return {
+          amount,
+          currency: "UGX"
+        };
+      }
+    }
+    return null;
+  }
+  /**
+   * Helper: Strips commas and converts to number
+   */
+  cleanNumber(val) {
+    if (!val) return 0;
+    const clean = val.replace(/,/g, "").trim();
+    const num = parseFloat(clean);
+    return isNaN(num) ? 0 : Math.round(num);
+  }
+  /**
+   * Helper: Cleans counterparty string by stripping trailing dots and noise
+   */
+  cleanCounterparty(val) {
+    if (!val) return void 0;
+    const clean = val.replace(/\bon\b.*$/i, "").replace(/[.]+$/, "").trim();
+    return clean || void 0;
+  }
+  /**
+   * Helper: Extracts Financial Transaction ID (MTN format)
+   */
+  extractFinancialTxId(text2) {
+    const match = text2.match(/Financial Transaction Id:\s*([A-Za-z0-9]+)/i);
+    return match ? match[1].trim() : void 0;
+  }
+  /**
+   * Helper: Extracts Trans ID (Airtel format)
+   */
+  extractTransId(text2) {
+    const match = text2.match(/Trans(?:\.|\s*)ID:\s*([A-Za-z0-9.]+)/i);
+    if (!match) return void 0;
+    return match[1].replace(/[.]+$/, "").trim();
+  }
+  /**
+   * Helper: Extracts reference keyword from text (e.g. Ref: Fuel, Reference: Rent)
+   */
+  extractRefText(text2) {
+    const match = text2.match(/(?:Ref|Reference|Info):\s*([^.]+)/i);
+    return match ? match[1].trim() : void 0;
+  }
+  /**
+   * Helper: Extracts balance from message
+   */
+  extractBalance(text2) {
+    const match = text2.match(/(?:New\s*(?:Airtel\s*Money\s*|MoMo\s*)?balance|Your\s*(?:new\s*)?balance|Balance)(?::|\s+is)?\s*(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\b/i);
+    if (!match) return void 0;
+    const num = this.cleanNumber(match[1]);
+    return num > 0 ? num : void 0;
+  }
+  /**
+   * Helper: Extracts fee/charge from message (supports 'Fee was', 'Fee:', 'Charge:', etc.)
+   */
+  extractFee(text2) {
+    const match = text2.match(/(?:Fee(?:\s+was|\s+is)?|Charge)(?::|\s+was|\s+is)?\s*(?:UGX|Shs|USh)?\s*([\d,]+(?:\.\d+)?)\b/i);
+    if (!match) return 0;
+    return this.cleanNumber(match[1]);
+  }
+  /**
+   * Helper: Extracts date string from message
+   */
+  extractDate(text2) {
+    const match = text2.match(/\b(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?|\d{2}\/\d{2}\/\d{4}(?:\s+\d{2}:\d{2}(?::\d{2})?)?)\b/);
+    return match ? match[1].trim() : void 0;
+  }
+};
+var parserService = new ParserService();
+
 // src/routes/finance.ts
 var router2 = (0, import_express2.Router)();
 var notFound = (res) => res.status(404).json({ error: "Record not found" });
 var calendarDate = (value) => value instanceof Date ? value.toISOString().slice(0, 10) : value;
+router2.post("/transactions/parse", async (req, res) => {
+  try {
+    const { text: text2 } = req.body || {};
+    if (!text2 || typeof text2 !== "string" || !text2.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required parameter: 'text' (string)"
+      });
+    }
+    const parsed = parserService.parse(text2);
+    if (!parsed) {
+      return res.status(422).json({
+        success: false,
+        error: "Could not parse transaction details from the provided text"
+      });
+    }
+    return res.json({
+      success: true,
+      data: parsed
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message || "Failed to parse transaction"
+    });
+  }
+});
 router2.use(requireAuth);
 async function computeAccountBalance(userId, accountId, openingBalance) {
   const result = await db.select({
