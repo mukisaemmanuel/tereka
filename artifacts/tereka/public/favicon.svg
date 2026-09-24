@@ -1,3 +1,26 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="terekaGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D" />
+      <stop offset="100%" stop-color="#EAB308" />
+    </linearGradient>
+    <filter id="subtleShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#0F382C" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Golden Coin Background -->
+  <circle cx="256" cy="256" r="230" fill="url(#terekaGold)" filter="url(#subtleShadow)" />
+  
+  <!-- Subtle Inner Ring -->
+  <circle cx="256" cy="256" r="215" fill="none" stroke="#D97706" stroke-width="4" stroke-opacity="0.3" />
+
+  <!-- Tereka 'T' Mark (Deep Forest Green) -->
+  <g fill="#0F382C">
+    <!-- Top Horizontal Crossbar -->
+    <path d="M140 160 C140 148, 150 138, 162 138 L350 138 C362 138, 372 148, 372 160 L372 188 C372 196, 366 202, 358 202 L308 202 L308 348 C308 360, 298 370, 286 370 L226 370 C214 370, 204 360, 204 348 L204 202 L154 202 C146 202, 140 196, 140 188 Z" />
+    
+    <!-- Modern Growth Accent Dot -->
+    <circle cx="360" cy="356" r="22" fill="#0F382C" />
+  </g>
 </svg>
