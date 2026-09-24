@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "artifacts/tereka/dist",
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [
     {

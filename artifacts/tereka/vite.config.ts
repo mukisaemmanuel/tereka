@@ -1,9 +1,29 @@
-import path from 'path';
+import path from 'node:path';
+import fs from 'node:fs';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
+
+function mirrorDistPlugin(): Plugin {
+  return {
+    name: 'mirror-dist-to-root',
+    closeBundle() {
+      const localDist = path.resolve(import.meta.dirname, 'dist');
+      const rootDist = path.resolve(import.meta.dirname, '..', '..', 'dist');
+
+      if (fs.existsSync(localDist)) {
+        if (fs.existsSync(rootDist)) {
+          fs.rmSync(rootDist, { recursive: true, force: true });
+        }
+        fs.mkdirSync(rootDist, { recursive: true });
+        fs.cpSync(localDist, rootDist, { recursive: true });
+        console.log(`[Tereka Vite] Successfully mirrored build output from ${localDist} to ${rootDist}`);
+      }
+    },
+  };
+}
 
 const rawPort = process.env.PORT || '5180';
 const port = Number(rawPort);
@@ -19,6 +39,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    mirrorDistPlugin(),
     ...(process.env.NODE_ENV !== 'production' &&
     process.env.REPL_ID !== undefined
       ? [
