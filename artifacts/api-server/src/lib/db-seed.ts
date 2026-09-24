@@ -29,7 +29,7 @@ export const defaultCategoryIds = {
   education: "category-education",
 };
 
-const defaultCategories = [
+export const defaultCategories = [
   { id: defaultCategoryIds.salary, name: "Salary & Income", type: "income", icon: "briefcase", isDefault: true },
   { id: defaultCategoryIds.utilities, name: "Utilities & Yaka", type: "expense", icon: "zap", isDefault: true },
   { id: defaultCategoryIds.transport, name: "Transport & Boda", type: "expense", icon: "car", isDefault: true },

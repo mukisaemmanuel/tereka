@@ -21,14 +21,13 @@ import {
   usersTable,
   profilesTable,
   accountsTable,
-  budgetsTable,
-  financialGoalsTable,
+  categoriesTable,
   aiConversationsTable,
   aiMessagesTable,
 } from "@workspace/db";
 import { generateToken, hashPassword, verifyPassword } from "../lib/auth";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth";
-import { defaultCategoryIds } from "../lib/db-seed";
+import { defaultCategories } from "../lib/db-seed";
 
 const router = Router();
 
@@ -103,14 +102,14 @@ router.post("/register", async (req, res) => {
       theme: "light",
     });
 
-    // 3. Starter Wallets (Mobile Money & Cash)
+    // 3. Starter Accounts with strict zero-state baseline (balance: 0)
     const cashAccount = {
       id: `acc-cash-${userId}`,
       userId,
-      name: "Physical Cash",
+      name: "Cash",
       type: "cash",
       currency: "UGX",
-      openingBalance: "50000",
+      openingBalance: "0",
       isActive: true,
     };
 
@@ -120,53 +119,32 @@ router.post("/register", async (req, res) => {
       name: "MTN MoMo",
       type: "mobile_money",
       currency: "UGX",
-      openingBalance: "200000",
+      openingBalance: "0",
       isActive: true,
     };
 
     await db.insert(accountsTable).values([cashAccount, momoAccount]);
 
-    // 4. Starter Budgets
-    await db.insert(budgetsTable).values([
-      {
-        id: `budget-food-${userId}`,
-        userId,
-        categoryId: defaultCategoryIds.food,
-        amount: "300000",
-        currency: "UGX",
-        period: "monthly",
-      },
-      {
-        id: `budget-transport-${userId}`,
-        userId,
-        categoryId: defaultCategoryIds.transport,
-        amount: "150000",
-        currency: "UGX",
-        period: "monthly",
-      },
-      {
-        id: `budget-utilities-${userId}`,
-        userId,
-        categoryId: defaultCategoryIds.utilities,
-        amount: "100000",
-        currency: "UGX",
-        period: "monthly",
-      },
-    ]);
+    // 4. Ensure standard default categories exist in database
+    for (const cat of defaultCategories) {
+      const existing = await db
+        .select()
+        .from(categoriesTable)
+        .where(eq(categoriesTable.id, cat.id))
+        .limit(1);
 
-    // 5. Starter Emergency Goal
-    await db.insert(financialGoalsTable).values({
-      id: `goal-emergency-${userId}`,
-      userId,
-      name: "Emergency Reserve Fund",
-      targetAmount: "2000000",
-      currentAmount: "250000",
-      currency: "UGX",
-      targetDate: "2027-06-30",
-      status: "active",
-    });
+      if (existing.length === 0) {
+        await db.insert(categoriesTable).values({
+          id: cat.id,
+          name: cat.name,
+          type: cat.type,
+          icon: cat.icon,
+          isDefault: true,
+        });
+      }
+    }
 
-    // 6. Welcome AI Conversation
+    // 5. Welcome AI Conversation (no dummy transactions or pre-filled budgets/goals)
     const conversationId = `conv-${userId}`;
     await db.insert(aiConversationsTable).values({
       id: conversationId,
@@ -179,7 +157,7 @@ router.post("/register", async (req, res) => {
       conversationId,
       userId,
       role: "assistant",
-      content: `Hello ${name.trim()}! Welcome to Tereka Financial Intelligence. Your starter accounts and budgets in UGX are configured in PostgreSQL. Ask me anytime for cashflow insights.`,
+      content: `Hello ${name.trim()}! Welcome to Tereka Financial Intelligence. Your accounts have been initialized with a clean zero-state baseline in UGX. Ask me anytime for cashflow insights.`,
     });
 
     // 7. Generate Signed JWT

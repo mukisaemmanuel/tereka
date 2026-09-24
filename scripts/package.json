@@ -8,6 +8,7 @@
     "inspect-db": "tsx ./src/inspect-db.ts",
     "reset-db": "tsx ./src/reset-ugx-demo.ts",
     "test-system": "tsx ./src/test-system.ts",
+    "test-zero-state": "tsx ./src/test-zero-state.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

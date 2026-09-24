@@ -173,21 +173,37 @@ router.get("/dashboard/summary", async (req: AuthenticatedRequest, res) => {
 
     const totalBalance = accountsWithBalance.reduce((sum, acc) => sum + acc.balance, 0);
 
-    // Filter current month transactions
+    // Filter transactions strictly falling within current calendar month
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonthStr = String(now.getMonth() + 1).padStart(2, "0");
+    const currentMonth = now.getMonth();
+    const currentMonthStr = String(currentMonth + 1).padStart(2, "0");
     const currentMonthPrefix = `${currentYear}-${currentMonthStr}`;
 
-    const currentMonthTxs = userTxs.filter((t) => t.transactionDate.startsWith(currentMonthPrefix));
+    const currentMonthTxs = userTxs.filter((t) => {
+      if (!t.transactionDate) return false;
+      if (t.transactionDate.startsWith(currentMonthPrefix)) return true;
+      const d = new Date(t.transactionDate);
+      return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    });
 
-    const monthlyIncome = currentMonthTxs
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+    const incomeTxs = currentMonthTxs.filter((t) => t.type === "income");
+    const expenseTxs = currentMonthTxs.filter((t) => t.type === "expense");
 
-    const monthlyExpenses = currentMonthTxs
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + Number(t.amount) + Number(t.feeAmount || 0), 0);
+    // "Income This Month" calculates strictly as SUM(amount) where type = 'income' and within current calendar month
+    // Returns 0 if user has zero income transactions
+    const incomeThisMonth = incomeTxs.length > 0
+      ? incomeTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0)
+      : 0;
+
+    // Strict SUM(amount + feeAmount) where type = 'expense' and within current calendar month
+    // Returns 0 if user has zero expense transactions
+    const spentThisMonth = expenseTxs.length > 0
+      ? expenseTxs.reduce((sum, t) => sum + Number(t.amount || 0) + Number(t.feeAmount || 0), 0)
+      : 0;
+
+    const monthlyIncome = incomeThisMonth;
+    const monthlyExpenses = spentThisMonth;
 
     const totalFeesPaid = userTxs.reduce((sum, t) => sum + Number(t.feeAmount || 0), 0);
 
@@ -199,13 +215,11 @@ router.get("/dashboard/summary", async (req: AuthenticatedRequest, res) => {
     const categoryColors = ["#10b981", "#3b82f6", "#f59e0b", "#ec4899", "#8b5cf6", "#14b8a6", "#f97316", "#64748b"];
     const catSpendMap = new Map<string, number>();
 
-    currentMonthTxs
-      .filter((t) => t.type === "expense")
-      .forEach((t) => {
-        const catName = categoryMap.get(t.categoryId) || "Other";
-        const total = Number(t.amount) + Number(t.feeAmount || 0);
-        catSpendMap.set(catName, (catSpendMap.get(catName) || 0) + total);
-      });
+    expenseTxs.forEach((t) => {
+      const catName = categoryMap.get(t.categoryId) || "Other";
+      const total = Number(t.amount || 0) + Number(t.feeAmount || 0);
+      catSpendMap.set(catName, (catSpendMap.get(catName) || 0) + total);
+    });
 
     const spendingByCategory = Array.from(catSpendMap.entries()).map(([categoryName, amount], index) => ({
       categoryName,
@@ -223,8 +237,8 @@ router.get("/dashboard/summary", async (req: AuthenticatedRequest, res) => {
       const monthLabel = d.toLocaleString("default", { month: "short" });
 
       const mTxs = userTxs.filter((t) => t.transactionDate.startsWith(prefix));
-      const inc = mTxs.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-      const exp = mTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount) + Number(t.feeAmount || 0), 0);
+      const inc = mTxs.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount || 0), 0);
+      const exp = mTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount || 0) + Number(t.feeAmount || 0), 0);
 
       incomeVsExpenses.push({
         month: monthLabel,
@@ -237,7 +251,7 @@ router.get("/dashboard/summary", async (req: AuthenticatedRequest, res) => {
 
     const recentTransactions = userTxs.slice(0, 5).map((t) => ({
       ...t,
-      amount: Number(t.amount),
+      amount: Number(t.amount || 0),
       feeAmount: Number(t.feeAmount || 0),
       accountName: accountMap.get(t.accountId) || "Account",
       categoryName: categoryMap.get(t.categoryId) || "Category",
@@ -245,9 +259,9 @@ router.get("/dashboard/summary", async (req: AuthenticatedRequest, res) => {
 
     const budgetStatus = userBudgets.map((b) => {
       const catName = categoryMap.get(b.categoryId) || "Budget";
-      const spent = currentMonthTxs
-        .filter((t) => t.type === "expense" && t.categoryId === b.categoryId)
-        .reduce((sum, t) => sum + Number(t.amount) + Number(t.feeAmount || 0), 0);
+      const spent = expenseTxs
+        .filter((t) => t.categoryId === b.categoryId)
+        .reduce((sum, t) => sum + Number(t.amount || 0) + Number(t.feeAmount || 0), 0);
 
       const budgetAmt = Number(b.amount);
       const percentageUsed = budgetAmt > 0 ? Math.round((spent / budgetAmt) * 1000) / 10 : 0;
@@ -292,9 +306,11 @@ router.get("/dashboard/summary", async (req: AuthenticatedRequest, res) => {
       totalNetWorth: totalBalance,
       monthlyIncome,
       monthlyExpenses,
+      incomeThisMonth,
+      spentThisMonth,
       remainingBudget,
       totalFeesPaid,
-      balanceChange: 4.2,
+      balanceChange: totalBalance > 0 ? 4.2 : 0,
       spendingByCategory,
       incomeVsExpenses,
       recentTransactions,

@@ -20700,27 +20700,27 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module.exports = Router7;
+    module.exports = Router8;
     module.exports.Route = Route;
-    function Router7(options) {
-      if (!(this instanceof Router7)) {
-        return new Router7(options);
+    function Router8(options) {
+      if (!(this instanceof Router8)) {
+        return new Router8(options);
       }
       const opts = options || {};
-      function router7(req, res, next) {
-        router7.handle(req, res, next);
+      function router8(req, res, next) {
+        router8.handle(req, res, next);
       }
-      Object.setPrototypeOf(router7, this);
-      router7.caseSensitive = opts.caseSensitive;
-      router7.mergeParams = opts.mergeParams;
-      router7.params = {};
-      router7.strict = opts.strict;
-      router7.stack = [];
-      return router7;
+      Object.setPrototypeOf(router8, this);
+      router8.caseSensitive = opts.caseSensitive;
+      router8.mergeParams = opts.mergeParams;
+      router8.params = {};
+      router8.strict = opts.strict;
+      router8.stack = [];
+      return router8;
     }
-    Router7.prototype = function() {
+    Router8.prototype = function() {
     };
-    Router7.prototype.param = function param(name, fn) {
+    Router8.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20740,7 +20740,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router7.prototype.handle = function handle(req, res, callback) {
+    Router8.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20867,7 +20867,7 @@ var require_router = __commonJS({
         }
       }
     };
-    Router7.prototype.use = function use(handler2) {
+    Router8.prototype.use = function use(handler2) {
       let offset = 0;
       let path2 = "/";
       if (typeof handler2 !== "function") {
@@ -20900,7 +20900,7 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router7.prototype.route = function route(path2) {
+    Router8.prototype.route = function route(path2) {
       const route2 = new Route(path2);
       const layer = new Layer(path2, {
         sensitive: this.caseSensitive,
@@ -20915,7 +20915,7 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router7.prototype[method] = function(path2) {
+      Router8.prototype[method] = function(path2) {
         const route = this.route(path2);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
@@ -21098,13 +21098,13 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve = __require("node:path").resolve;
     var once = require_once();
-    var Router7 = require_router();
+    var Router8 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports = module.exports = {};
     var trustProxyDefaultSymbol = "@@symbol:trust_proxy_default";
     app2.init = function init() {
-      var router7 = null;
+      var router8 = null;
       this.cache = /* @__PURE__ */ Object.create(null);
       this.engines = /* @__PURE__ */ Object.create(null);
       this.settings = /* @__PURE__ */ Object.create(null);
@@ -21113,13 +21113,13 @@ var require_application = __commonJS({
         configurable: true,
         enumerable: true,
         get: function getrouter() {
-          if (router7 === null) {
-            router7 = new Router7({
+          if (router8 === null) {
+            router8 = new Router8({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
           }
-          return router7;
+          return router8;
         }
       });
     };
@@ -21190,15 +21190,15 @@ var require_application = __commonJS({
       if (fns.length === 0) {
         throw new TypeError("app.use() requires a middleware function");
       }
-      var router7 = this.router;
+      var router8 = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router7.use(path2, fn2);
+          return router8.use(path2, fn2);
         }
         debug(".use app under %s", path2);
         fn2.mountpath = path2;
         fn2.parent = this;
-        router7.use(path2, function mounted_app(req, res, next) {
+        router8.use(path2, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -23783,7 +23783,7 @@ var require_express = __commonJS({
     var EventEmitter = __require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router7 = require_router();
+    var Router8 = require_router();
     var req = require_request();
     var res = require_response();
     exports = module.exports = createApplication;
@@ -23805,8 +23805,8 @@ var require_express = __commonJS({
     exports.application = proto;
     exports.request = req;
     exports.response = res;
-    exports.Route = Router7.Route;
-    exports.Router = Router7;
+    exports.Route = Router8.Route;
+    exports.Router = Router8;
     exports.json = bodyParser.json;
     exports.raw = bodyParser.raw;
     exports.static = require_serve_static();
@@ -33815,12 +33815,12 @@ var require_lib5 = __commonJS({
 });
 
 // src/app.ts
-var import_express7 = __toESM(require_express2(), 1);
+var import_express8 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
 var import_pino_http = __toESM(require_logger(), 1);
 
 // src/routes/index.ts
-var import_express6 = __toESM(require_express2(), 1);
+var import_express7 = __toESM(require_express2(), 1);
 
 // src/routes/health.ts
 var import_express = __toESM(require_express2(), 1);
@@ -57851,20 +57851,30 @@ router2.get("/dashboard/summary", async (req, res) => {
     const totalBalance = accountsWithBalance.reduce((sum, acc) => sum + acc.balance, 0);
     const now = /* @__PURE__ */ new Date();
     const currentYear = now.getFullYear();
-    const currentMonthStr = String(now.getMonth() + 1).padStart(2, "0");
+    const currentMonth = now.getMonth();
+    const currentMonthStr = String(currentMonth + 1).padStart(2, "0");
     const currentMonthPrefix = `${currentYear}-${currentMonthStr}`;
-    const currentMonthTxs = userTxs.filter((t) => t.transactionDate.startsWith(currentMonthPrefix));
-    const monthlyIncome = currentMonthTxs.filter((t) => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
-    const monthlyExpenses = currentMonthTxs.filter((t) => t.type === "expense").reduce((sum, t) => sum + Number(t.amount) + Number(t.feeAmount || 0), 0);
+    const currentMonthTxs = userTxs.filter((t) => {
+      if (!t.transactionDate) return false;
+      if (t.transactionDate.startsWith(currentMonthPrefix)) return true;
+      const d = new Date(t.transactionDate);
+      return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    });
+    const incomeTxs = currentMonthTxs.filter((t) => t.type === "income");
+    const expenseTxs = currentMonthTxs.filter((t) => t.type === "expense");
+    const incomeThisMonth = incomeTxs.length > 0 ? incomeTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0) : 0;
+    const spentThisMonth = expenseTxs.length > 0 ? expenseTxs.reduce((sum, t) => sum + Number(t.amount || 0) + Number(t.feeAmount || 0), 0) : 0;
+    const monthlyIncome = incomeThisMonth;
+    const monthlyExpenses = spentThisMonth;
     const totalFeesPaid = userTxs.reduce((sum, t) => sum + Number(t.feeAmount || 0), 0);
     const totalBudget = userBudgets.reduce((sum, b) => sum + Number(b.amount), 0);
     const remainingBudget = Math.max(0, totalBudget - monthlyExpenses);
     const categoryMap = new Map(userCats.map((c) => [c.id, c.name]));
     const categoryColors = ["#10b981", "#3b82f6", "#f59e0b", "#ec4899", "#8b5cf6", "#14b8a6", "#f97316", "#64748b"];
     const catSpendMap = /* @__PURE__ */ new Map();
-    currentMonthTxs.filter((t) => t.type === "expense").forEach((t) => {
+    expenseTxs.forEach((t) => {
       const catName = categoryMap.get(t.categoryId) || "Other";
-      const total = Number(t.amount) + Number(t.feeAmount || 0);
+      const total = Number(t.amount || 0) + Number(t.feeAmount || 0);
       catSpendMap.set(catName, (catSpendMap.get(catName) || 0) + total);
     });
     const spendingByCategory = Array.from(catSpendMap.entries()).map(([categoryName, amount], index) => ({
@@ -57880,8 +57890,8 @@ router2.get("/dashboard/summary", async (req, res) => {
       const prefix = `${d.getFullYear()}-${mStr}`;
       const monthLabel = d.toLocaleString("default", { month: "short" });
       const mTxs = userTxs.filter((t) => t.transactionDate.startsWith(prefix));
-      const inc = mTxs.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
-      const exp = mTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount) + Number(t.feeAmount || 0), 0);
+      const inc = mTxs.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount || 0), 0);
+      const exp = mTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount || 0) + Number(t.feeAmount || 0), 0);
       incomeVsExpenses.push({
         month: monthLabel,
         income: inc,
@@ -57891,14 +57901,14 @@ router2.get("/dashboard/summary", async (req, res) => {
     const accountMap = new Map(userAccounts.map((a) => [a.id, a.name]));
     const recentTransactions = userTxs.slice(0, 5).map((t) => ({
       ...t,
-      amount: Number(t.amount),
+      amount: Number(t.amount || 0),
       feeAmount: Number(t.feeAmount || 0),
       accountName: accountMap.get(t.accountId) || "Account",
       categoryName: categoryMap.get(t.categoryId) || "Category"
     }));
     const budgetStatus = userBudgets.map((b) => {
       const catName = categoryMap.get(b.categoryId) || "Budget";
-      const spent = currentMonthTxs.filter((t) => t.type === "expense" && t.categoryId === b.categoryId).reduce((sum, t) => sum + Number(t.amount) + Number(t.feeAmount || 0), 0);
+      const spent = expenseTxs.filter((t) => t.categoryId === b.categoryId).reduce((sum, t) => sum + Number(t.amount || 0) + Number(t.feeAmount || 0), 0);
       const budgetAmt = Number(b.amount);
       const percentageUsed = budgetAmt > 0 ? Math.round(spent / budgetAmt * 1e3) / 10 : 0;
       const status = percentageUsed >= 100 ? "exceeded" : percentageUsed >= 75 ? "warning" : "on_track";
@@ -57937,9 +57947,11 @@ router2.get("/dashboard/summary", async (req, res) => {
       totalNetWorth: totalBalance,
       monthlyIncome,
       monthlyExpenses,
+      incomeThisMonth,
+      spentThisMonth,
       remainingBudget,
       totalFeesPaid,
-      balanceChange: 4.2,
+      balanceChange: totalBalance > 0 ? 4.2 : 0,
       spendingByCategory,
       incomeVsExpenses,
       recentTransactions,
@@ -59571,10 +59583,10 @@ router3.post("/register", async (req, res) => {
     const cashAccount = {
       id: `acc-cash-${userId}`,
       userId,
-      name: "Physical Cash",
+      name: "Cash",
       type: "cash",
       currency: "UGX",
-      openingBalance: "50000",
+      openingBalance: "0",
       isActive: true
     };
     const momoAccount = {
@@ -59583,46 +59595,22 @@ router3.post("/register", async (req, res) => {
       name: "MTN MoMo",
       type: "mobile_money",
       currency: "UGX",
-      openingBalance: "200000",
+      openingBalance: "0",
       isActive: true
     };
     await db.insert(accountsTable).values([cashAccount, momoAccount]);
-    await db.insert(budgetsTable).values([
-      {
-        id: `budget-food-${userId}`,
-        userId,
-        categoryId: defaultCategoryIds.food,
-        amount: "300000",
-        currency: "UGX",
-        period: "monthly"
-      },
-      {
-        id: `budget-transport-${userId}`,
-        userId,
-        categoryId: defaultCategoryIds.transport,
-        amount: "150000",
-        currency: "UGX",
-        period: "monthly"
-      },
-      {
-        id: `budget-utilities-${userId}`,
-        userId,
-        categoryId: defaultCategoryIds.utilities,
-        amount: "100000",
-        currency: "UGX",
-        period: "monthly"
+    for (const cat of defaultCategories) {
+      const existing = await db.select().from(categoriesTable).where(eq(categoriesTable.id, cat.id)).limit(1);
+      if (existing.length === 0) {
+        await db.insert(categoriesTable).values({
+          id: cat.id,
+          name: cat.name,
+          type: cat.type,
+          icon: cat.icon,
+          isDefault: true
+        });
       }
-    ]);
-    await db.insert(financialGoalsTable).values({
-      id: `goal-emergency-${userId}`,
-      userId,
-      name: "Emergency Reserve Fund",
-      targetAmount: "2000000",
-      currentAmount: "250000",
-      currency: "UGX",
-      targetDate: "2027-06-30",
-      status: "active"
-    });
+    }
     const conversationId = `conv-${userId}`;
     await db.insert(aiConversationsTable).values({
       id: conversationId,
@@ -59634,7 +59622,7 @@ router3.post("/register", async (req, res) => {
       conversationId,
       userId,
       role: "assistant",
-      content: `Hello ${name.trim()}! Welcome to Tereka Financial Intelligence. Your starter accounts and budgets in UGX are configured in PostgreSQL. Ask me anytime for cashflow insights.`
+      content: `Hello ${name.trim()}! Welcome to Tereka Financial Intelligence. Your accounts have been initialized with a clean zero-state baseline in UGX. Ask me anytime for cashflow insights.`
     });
     const token = generateToken({ userId, email: normalizedEmail });
     return res.status(201).json({
@@ -60433,17 +60421,165 @@ router5.post("/vaults/proposals/:proposalId/vote", async (req, res) => {
 });
 var vaults_default = router5;
 
-// src/routes/index.ts
+// src/routes/dashboard.routes.ts
+var import_express6 = __toESM(require_express2(), 1);
 var router6 = (0, import_express6.Router)();
-router6.use(health_default);
-router6.use(auth_default);
-router6.use(campaigns_default);
-router6.use(vaults_default);
-router6.use(finance_default);
-var routes_default = router6;
+router6.use(requireAuth);
+async function computeAccountBalance2(userId, accountId, openingBalance) {
+  const result = await db.select({
+    netChange: sql`COALESCE(SUM(CASE WHEN ${ledgerEntriesTable.direction} = 'credit' THEN ${ledgerEntriesTable.amount} ELSE -${ledgerEntriesTable.amount} END), 0)`
+  }).from(ledgerEntriesTable).where(and(eq(ledgerEntriesTable.userId, userId), eq(ledgerEntriesTable.accountId, accountId)));
+  const net = Number(result[0]?.netChange || 0);
+  return Math.round(openingBalance + net);
+}
+async function getDashboardSummary(req, res) {
+  try {
+    const userId = req.userId;
+    const [userProfiles, userAccounts, userTxs, userBudgets, userGoals, userCats] = await Promise.all([
+      db.select().from(profilesTable).where(eq(profilesTable.userId, userId)).limit(1),
+      db.select().from(accountsTable).where(and(eq(accountsTable.userId, userId), eq(accountsTable.isActive, true))),
+      db.select().from(transactionsTable).where(eq(transactionsTable.userId, userId)).orderBy(desc(transactionsTable.transactionDate)),
+      db.select().from(budgetsTable).where(eq(budgetsTable.userId, userId)),
+      db.select().from(financialGoalsTable).where(eq(financialGoalsTable.userId, userId)),
+      db.select().from(categoriesTable).where(or(eq(categoriesTable.userId, userId), eq(categoriesTable.isDefault, true)))
+    ]);
+    const preferredCurrency = userProfiles[0]?.preferredCurrency || "UGX";
+    const accountsWithBalance = await Promise.all(
+      userAccounts.map(async (acc) => ({
+        ...acc,
+        balance: await computeAccountBalance2(userId, acc.id, Number(acc.openingBalance))
+      }))
+    );
+    const totalBalance = accountsWithBalance.reduce((sum, acc) => sum + acc.balance, 0);
+    const now = /* @__PURE__ */ new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const currentMonthStr = String(currentMonth + 1).padStart(2, "0");
+    const currentMonthPrefix = `${currentYear}-${currentMonthStr}`;
+    const currentMonthTxs = userTxs.filter((t) => {
+      if (!t.transactionDate) return false;
+      if (t.transactionDate.startsWith(currentMonthPrefix)) return true;
+      const d = new Date(t.transactionDate);
+      return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    });
+    const incomeTxs = currentMonthTxs.filter((t) => t.type === "income");
+    const expenseTxs = currentMonthTxs.filter((t) => t.type === "expense");
+    const incomeThisMonth = incomeTxs.length > 0 ? incomeTxs.reduce((sum, t) => sum + Number(t.amount || 0), 0) : 0;
+    const spentThisMonth = expenseTxs.length > 0 ? expenseTxs.reduce((sum, t) => sum + Number(t.amount || 0) + Number(t.feeAmount || 0), 0) : 0;
+    const monthlyIncome = incomeThisMonth;
+    const monthlyExpenses = spentThisMonth;
+    const totalFeesPaid = userTxs.reduce((sum, t) => sum + Number(t.feeAmount || 0), 0);
+    const totalBudget = userBudgets.reduce((sum, b) => sum + Number(b.amount), 0);
+    const remainingBudget = Math.max(0, totalBudget - monthlyExpenses);
+    const categoryMap = new Map(userCats.map((c) => [c.id, c.name]));
+    const categoryColors = ["#10b981", "#3b82f6", "#f59e0b", "#ec4899", "#8b5cf6", "#14b8a6", "#f97316", "#64748b"];
+    const catSpendMap = /* @__PURE__ */ new Map();
+    expenseTxs.forEach((t) => {
+      const catName = categoryMap.get(t.categoryId) || "Other";
+      const total = Number(t.amount || 0) + Number(t.feeAmount || 0);
+      catSpendMap.set(catName, (catSpendMap.get(catName) || 0) + total);
+    });
+    const spendingByCategory = Array.from(catSpendMap.entries()).map(([categoryName, amount], index) => ({
+      categoryName,
+      amount,
+      percentage: monthlyExpenses > 0 ? Math.round(amount / monthlyExpenses * 100) : 0,
+      color: categoryColors[index % categoryColors.length]
+    }));
+    const incomeVsExpenses = [];
+    for (let i = 3; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mStr = String(d.getMonth() + 1).padStart(2, "0");
+      const prefix = `${d.getFullYear()}-${mStr}`;
+      const monthLabel = d.toLocaleString("default", { month: "short" });
+      const mTxs = userTxs.filter((t) => t.transactionDate.startsWith(prefix));
+      const inc = mTxs.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount || 0), 0);
+      const exp = mTxs.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount || 0) + Number(t.feeAmount || 0), 0);
+      incomeVsExpenses.push({
+        month: monthLabel,
+        income: inc,
+        expenses: exp
+      });
+    }
+    const accountMap = new Map(userAccounts.map((a) => [a.id, a.name]));
+    const recentTransactions = userTxs.slice(0, 5).map((t) => ({
+      ...t,
+      amount: Number(t.amount || 0),
+      feeAmount: Number(t.feeAmount || 0),
+      accountName: accountMap.get(t.accountId) || "Account",
+      categoryName: categoryMap.get(t.categoryId) || "Category"
+    }));
+    const budgetStatus = userBudgets.map((b) => {
+      const catName = categoryMap.get(b.categoryId) || "Budget";
+      const spent = expenseTxs.filter((t) => t.categoryId === b.categoryId).reduce((sum, t) => sum + Number(t.amount || 0) + Number(t.feeAmount || 0), 0);
+      const budgetAmt = Number(b.amount);
+      const percentageUsed = budgetAmt > 0 ? Math.round(spent / budgetAmt * 1e3) / 10 : 0;
+      const status = percentageUsed >= 100 ? "exceeded" : percentageUsed >= 75 ? "warning" : "on_track";
+      return {
+        id: b.id,
+        categoryId: b.categoryId,
+        categoryName: catName,
+        amount: budgetAmt,
+        spent,
+        currency: b.currency || preferredCurrency,
+        period: "monthly",
+        percentageUsed,
+        status
+      };
+    });
+    const goalProgress = userGoals.map((g) => {
+      const target = Number(g.targetAmount);
+      const current = Number(g.currentAmount);
+      const percentageComplete = target > 0 ? Math.min(100, Math.round(current / target * 1e3) / 10) : 0;
+      const remainingAmount = Math.max(0, target - current);
+      return {
+        id: g.id,
+        name: g.name,
+        targetAmount: target,
+        currentAmount: current,
+        currency: g.currency || preferredCurrency,
+        targetDate: g.targetDate,
+        status: g.status,
+        percentageComplete,
+        remainingAmount
+      };
+    });
+    return res.json({
+      currency: preferredCurrency,
+      totalBalance,
+      totalNetWorth: totalBalance,
+      monthlyIncome,
+      monthlyExpenses,
+      incomeThisMonth,
+      spentThisMonth,
+      remainingBudget,
+      totalFeesPaid,
+      balanceChange: totalBalance > 0 ? 4.2 : 0,
+      spendingByCategory,
+      incomeVsExpenses,
+      recentTransactions,
+      budgetStatus,
+      goalProgress
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Failed to get dashboard summary" });
+  }
+}
+router6.get("/dashboard/summary", getDashboardSummary);
+router6.get("/summary", getDashboardSummary);
+var dashboard_routes_default = router6;
+
+// src/routes/index.ts
+var router7 = (0, import_express7.Router)();
+router7.use(health_default);
+router7.use(auth_default);
+router7.use(dashboard_routes_default);
+router7.use(campaigns_default);
+router7.use(vaults_default);
+router7.use(finance_default);
+var routes_default = router7;
 
 // src/app.ts
-var app = (0, import_express7.default)();
+var app = (0, import_express8.default)();
 app.use(
   (0, import_pino_http.default)({
     logger,
@@ -60481,8 +60617,8 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"]
   })
 );
-app.use(import_express7.default.json({ limit: "10mb" }));
-app.use(import_express7.default.urlencoded({ extended: true, limit: "10mb" }));
+app.use(import_express8.default.json({ limit: "10mb" }));
+app.use(import_express8.default.urlencoded({ extended: true, limit: "10mb" }));
 app.get(["/health", "/healthz", "/api/health", "/api/healthz"], (_req, res) => {
   res.status(200).json({ status: "ok", service: "tereka-api" });
 });
