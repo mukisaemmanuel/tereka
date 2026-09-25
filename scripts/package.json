@@ -9,6 +9,7 @@
     "reset-db": "tsx ./src/reset-ugx-demo.ts",
     "test-system": "tsx ./src/test-system.ts",
     "test-zero-state": "tsx ./src/test-zero-state.ts",
+    "test-google-recaptcha": "tsx ./src/test-google-recaptcha.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

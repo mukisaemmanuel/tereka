@@ -1,8 +1,15 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ArrowRight, Check, Coins, LockKeyhole, Mail, ShieldCheck, Sparkles, User, AlertCircle, Loader2 } from 'lucide-react';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { Button, Field, inputClass } from '@/components/layout';
 import { useAuth } from '@/lib/auth-context';
+
+const RECAPTCHA_SITE_KEY =
+  import.meta.env.VITE_RECAPTCHA_SITE_KEY ||
+  (typeof window !== 'undefined' && (window as any).__ENV__?.VITE_RECAPTCHA_SITE_KEY) ||
+  '';
 
 function AuthShell({ eyebrow, title, copy, children }: { eyebrow: string; title: string; copy: string; children: ReactNode }) {
   return (
@@ -43,7 +50,7 @@ function AuthShell({ eyebrow, title, copy, children }: { eyebrow: string; title:
 
 export function Login() {
   const [, setLocation] = useLocation();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +68,27 @@ export function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) {
+      setError('Google sign-in did not return valid credentials.');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+      setLocation('/');
+    } catch (err: any) {
+      setError(err.message || 'Failed to authenticate with Google. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google sign-in was cancelled or encountered an error.');
   };
 
   const handleDemoLogin = async () => {
@@ -82,7 +110,7 @@ export function Login() {
       title="Good to see you."
       copy="Your financial picture is waiting. Pick up where you left off."
     >
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <div className="space-y-5">
         {error && (
           <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
             <AlertCircle size={15} className="shrink-0" />
@@ -90,94 +118,145 @@ export function Login() {
           </div>
         )}
 
-        <Field label="Email address">
-          <div className="relative">
-            <Mail size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
-            <input
-              required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className={`${inputClass} pl-10`}
-              data-testid="input-login-email"
-            />
-          </div>
-        </Field>
-
-        <Field label="Password">
-          <div className="relative">
-            <LockKeyhole size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
-            <input
-              required
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              className={`${inputClass} pl-10`}
-              data-testid="input-login-password"
-            />
-          </div>
-        </Field>
-
-        <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-xs font-bold text-primary hover:underline" data-testid="link-forgot-password">
-            Forgot password?
-          </Link>
+        {/* Official Google Login Button */}
+        <div className="flex justify-center w-full min-h-[44px]">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            shape="rectangular"
+            size="large"
+            width="100%"
+            text="signin_with"
+          />
         </div>
-
-        <Button type="submit" disabled={loading} className="w-full py-3.5" data-testid="button-login">
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <>Open my space <ArrowRight size={16} /></>}
-        </Button>
 
         <div className="relative my-4 flex items-center justify-center">
           <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-          <span className="relative bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">or</span>
+          <span className="relative bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">or sign in with email</span>
         </div>
 
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-secondary px-4 py-3 text-sm font-bold text-foreground transition-colors hover:bg-secondary/80"
-          data-testid="button-demo-login"
-        >
-          <Sparkles size={16} className="text-primary" />
-          Explore Demo Space (Emmanuel Mukisa)
-        </button>
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <Field label="Email address">
+            <div className="relative">
+              <Mail size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className={`${inputClass} pl-10`}
+                data-testid="input-login-email"
+              />
+            </div>
+          </Field>
 
-        <p className="pt-3 text-center text-sm text-muted-foreground">
-          New to Tereka?{' '}
-          <Link href="/signup" className="font-bold text-primary hover:underline" data-testid="link-signup">
-            Create an account
-          </Link>
-        </p>
-      </form>
+          <Field label="Password">
+            <div className="relative">
+              <LockKeyhole size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
+              <input
+                required
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
+                className={`${inputClass} pl-10`}
+                data-testid="input-login-password"
+              />
+            </div>
+          </Field>
+
+          <div className="flex justify-end">
+            <Link href="/forgot-password" className="text-xs font-bold text-primary hover:underline" data-testid="link-forgot-password">
+              Forgot password?
+            </Link>
+          </div>
+
+          <Button type="submit" disabled={loading} className="w-full py-3.5" data-testid="button-login">
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <>Open my space <ArrowRight size={16} /></>}
+          </Button>
+
+          <div className="relative my-4 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+            <span className="relative bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">or demo</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDemoLogin}
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-secondary px-4 py-3 text-sm font-bold text-foreground transition-colors hover:bg-secondary/80"
+            data-testid="button-demo-login"
+          >
+            <Sparkles size={16} className="text-primary" />
+            Explore Demo Space (Emmanuel Mukisa)
+          </button>
+
+          <p className="pt-3 text-center text-sm text-muted-foreground">
+            New to Tereka?{' '}
+            <Link href="/signup" className="font-bold text-primary hover:underline" data-testid="link-signup">
+              Create an account
+            </Link>
+          </p>
+        </form>
+      </div>
     </AuthShell>
   );
 }
 
 export function Signup() {
   const [, setLocation] = useLocation();
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!captchaToken) {
+      setError('Please complete the reCAPTCHA verification before creating an account.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await register(name, email, password, 'UGX');
+      await register(name, email, password, 'UGX', captchaToken);
       setLocation('/');
     } catch (err: any) {
       setError(err.message || 'Failed to create account. Please try again.');
+      recaptchaRef.current?.reset();
+      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) {
+      setError('Google sign-up did not return valid credentials.');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+      setLocation('/');
+    } catch (err: any) {
+      setError(err.message || 'Failed to authenticate with Google. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google sign-up was cancelled or encountered an error.');
   };
 
   return (
@@ -186,7 +265,7 @@ export function Signup() {
       title="Build your money picture."
       copy="A few details now, then a clearer view of what your money is doing every day."
     >
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <div className="space-y-5">
         {error && (
           <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
             <AlertCircle size={15} className="shrink-0" />
@@ -194,66 +273,96 @@ export function Signup() {
           </div>
         )}
 
-        <Field label="Your full name">
-          <div className="relative">
-            <User size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
-            <input
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Amina Nanyonga"
-              className={`${inputClass} pl-10`}
-              data-testid="input-signup-name"
-            />
-          </div>
-        </Field>
-
-        <Field label="Email address">
-          <div className="relative">
-            <Mail size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
-            <input
-              required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className={`${inputClass} pl-10`}
-              data-testid="input-signup-email"
-            />
-          </div>
-        </Field>
-
-        <Field label="Create a password">
-          <div className="relative">
-            <LockKeyhole size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
-            <input
-              required
-              minLength={6}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 6 characters"
-              className={`${inputClass} pl-10`}
-              data-testid="input-signup-password"
-            />
-          </div>
-        </Field>
-
-        <div className="rounded-xl bg-secondary/70 p-3 text-xs leading-5 text-muted-foreground">
-          <Check size={14} className="mr-1 inline text-primary" /> Your data stays isolated and private in Ugandan Shillings (UGX).
+        {/* Official Google Signup Button */}
+        <div className="flex justify-center w-full min-h-[44px]">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="outline"
+            shape="rectangular"
+            size="large"
+            width="100%"
+            text="signup_with"
+          />
         </div>
 
-        <Button type="submit" disabled={loading} className="w-full py-3.5" data-testid="button-signup">
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <>Create my space <ArrowRight size={16} /></>}
-        </Button>
+        <div className="relative my-4 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
+          <span className="relative bg-background px-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">or register with email</span>
+        </div>
 
-        <p className="pt-3 text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link href="/login" className="font-bold text-primary hover:underline" data-testid="link-login">
-            Sign in
-          </Link>
-        </p>
-      </form>
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <Field label="Your full name">
+            <div className="relative">
+              <User size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Amina Nanyonga"
+                className={`${inputClass} pl-10`}
+                data-testid="input-signup-name"
+              />
+            </div>
+          </Field>
+
+          <Field label="Email address">
+            <div className="relative">
+              <Mail size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className={`${inputClass} pl-10`}
+                data-testid="input-signup-email"
+              />
+            </div>
+          </Field>
+
+          <Field label="Create a password">
+            <div className="relative">
+              <LockKeyhole size={16} className="absolute left-3 top-3.5 text-muted-foreground" />
+              <input
+                required
+                minLength={6}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className={`${inputClass} pl-10`}
+                data-testid="input-signup-password"
+              />
+            </div>
+          </Field>
+
+          {/* Google reCAPTCHA Verification */}
+          <div className="flex justify-center overflow-hidden rounded-xl border border-border/50 py-2 bg-secondary/30">
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey={RECAPTCHA_SITE_KEY}
+              onChange={(token) => setCaptchaToken(token)}
+              onExpired={() => setCaptchaToken(null)}
+            />
+          </div>
+
+          <div className="rounded-xl bg-secondary/70 p-3 text-xs leading-5 text-muted-foreground">
+            <Check size={14} className="mr-1 inline text-primary" /> Your data stays isolated and private in Ugandan Shillings (UGX).
+          </div>
+
+          <Button type="submit" disabled={loading} className="w-full py-3.5" data-testid="button-signup">
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <>Create my space <ArrowRight size={16} /></>}
+          </Button>
+
+          <p className="pt-3 text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/login" className="font-bold text-primary hover:underline" data-testid="link-login">
+              Sign in
+            </Link>
+          </p>
+        </form>
+      </div>
     </AuthShell>
   );
 }

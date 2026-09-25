@@ -52,7 +52,7 @@ async function main() {
   const accounts = (await accRes.json()) as any[];
   console.log('    Accounts received:', accounts.map((a: any) => ({ name: a.name, type: a.type, balance: a.balance })));
 
-  if (accounts.length !== 2) throw new Error(`Expected 2 default accounts, got ${accounts.length}`);
+  if (accounts.length !== 3) throw new Error(`Expected 3 default accounts, got ${accounts.length}`);
   for (const acc of accounts) {
     if (acc.balance !== 0) throw new Error(`Account balance should be 0, got ${acc.balance}`);
   }

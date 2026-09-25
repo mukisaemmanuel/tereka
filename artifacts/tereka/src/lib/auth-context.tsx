@@ -56,7 +56,8 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, baseCurrency?: string) => Promise<void>;
+  register: (name: string, email: string, password: string, baseCurrency?: string, captchaToken?: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -148,10 +149,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * Register a new account with starter PostgreSQL records
    */
-  const register = async (name: string, email: string, password: string, baseCurrency?: string) => {
-    const data = await apiFetch<any>('/api/register', {
+  const register = async (name: string, email: string, password: string, baseCurrency?: string, captchaToken?: string) => {
+    const data = await apiFetch<any>('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password, baseCurrency: baseCurrency || 'UGX' }),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        baseCurrency: baseCurrency || 'UGX',
+        captchaToken,
+      }),
+    });
+
+    localStorage.setItem(TOKEN_KEY, data.token);
+    setToken(data.token);
+    setUser(data.user);
+    if (data.profile) {
+      setProfile(data.profile);
+    }
+  };
+
+  /**
+   * Log in or sign up via verified Google OAuth ID Token
+   */
+  const loginWithGoogle = async (credential: string) => {
+    const data = await apiFetch<any>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
     });
 
     localStorage.setItem(TOKEN_KEY, data.token);
@@ -191,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user && !!token,
         login,
         register,
+        loginWithGoogle,
         logout,
         refreshUser,
       }}
